@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.IntruderLog
 import com.example.data.SecurityPrefs
+import com.example.receiver.CountdownScheduler
 import com.example.receiver.MyDeviceAdminReceiver
 import com.example.service.CameraForegroundService
 import kotlinx.coroutines.delay
@@ -28,11 +29,16 @@ data class SecurityUiState(
     val isAdminActive: Boolean = false,
     val hasCameraPermission: Boolean = false,
     val hasLocationPermission: Boolean = false,
+    val hasNotificationPermission: Boolean = true,
     val isBatteryOptimizationIgnored: Boolean = false,
     val logs: List<IntruderLog> = emptyList(),
     val isTesting: Boolean = false,
     val saveFeedback: Boolean = false,
-    val bannerMessage: String? = null
+    val bannerMessage: String? = null,
+    val countdownEnabled: Boolean = false,
+    val countdownEndTime: Long = 0L,
+    val countdownDurationMillis: Long = 60 * 60 * 1000L,
+    val countdownRemainingMillis: Long = 0L
 )
 
 class SecurityViewModel(private val context: Context) : ViewModel() {
@@ -44,12 +50,17 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             email = prefs.email,
             password = prefs.password,
             isTrackingEnabled = prefs.isTrackingEnabled,
-            logs = prefs.getLogs()
+            logs = prefs.getLogs(),
+            countdownEnabled = prefs.countdownEnabled,
+            countdownEndTime = prefs.countdownEndTime,
+            countdownDurationMillis = prefs.countdownDurationMillis,
+            countdownRemainingMillis = remainingCountdownMillis()
         )
     )
     val uiState: StateFlow<SecurityUiState> = _uiState.asStateFlow()
 
     init {
+        CountdownScheduler.rescheduleFromPrefs(context)
         viewModelScope.launch {
             prefs.trackingEnabledFlow.collect { enabled ->
                 _uiState.update { it.copy(isTrackingEnabled = enabled) }
@@ -60,7 +71,24 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
                 _uiState.update { it.copy(logs = logList) }
             }
         }
+        viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                _uiState.update {
+                    it.copy(
+                        countdownEnabled = prefs.countdownEnabled,
+                        countdownEndTime = prefs.countdownEndTime,
+                        countdownRemainingMillis = remainingCountdownMillis()
+                    )
+                }
+            }
+        }
         refreshStatuses()
+    }
+
+    private fun remainingCountdownMillis(): Long {
+        if (!prefs.countdownEnabled) return 0L
+        return (prefs.countdownEndTime - System.currentTimeMillis()).coerceAtLeast(0L)
     }
 
     fun onEmailChange(newEmail: String) {
@@ -92,6 +120,10 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
 
         saveCredentials()
         prefs.isTrackingEnabled = enabled
+        if (!enabled) {
+            prefs.resetFailedUnlockAttempts()
+            CountdownScheduler.cancel(context)
+        }
         _uiState.update { it.copy(isTrackingEnabled = enabled) }
 
         val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
@@ -135,6 +167,29 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         }
     }
 
+    fun startCountdown(durationMillis: Long) {
+        if (!_uiState.value.isTrackingEnabled) {
+            _uiState.update { it.copy(bannerMessage = "يرجى تشغيل الحماية أولاً لتفعيل المؤقت") }
+            return
+        }
+        CountdownScheduler.start(context, durationMillis)
+        _uiState.update {
+            it.copy(
+                countdownEnabled = true,
+                countdownEndTime = prefs.countdownEndTime,
+                countdownDurationMillis = prefs.countdownDurationMillis,
+                countdownRemainingMillis = remainingCountdownMillis()
+            )
+        }
+    }
+
+    fun cancelCountdown() {
+        CountdownScheduler.cancel(context)
+        _uiState.update {
+            it.copy(countdownEnabled = false, countdownEndTime = 0L, countdownRemainingMillis = 0L)
+        }
+    }
+
     fun clearLogs() {
         prefs.clearLogs()
     }
@@ -161,6 +216,12 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             android.Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
+        val hasNotifications = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
         val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
         val isBatteryIgnored = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             pm?.isIgnoringBatteryOptimizations(context.packageName) == true
@@ -168,11 +229,19 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             true
         }
 
+        if (prefs.isTrackingEnabled && !isAdmin) {
+            prefs.isTrackingEnabled = false
+            prefs.resetFailedUnlockAttempts()
+            CountdownScheduler.cancel(context)
+            context.stopService(Intent(context, CameraForegroundService::class.java))
+        }
+
         _uiState.update {
             it.copy(
                 isAdminActive = isAdmin,
                 hasCameraPermission = hasCamera,
                 hasLocationPermission = hasLocation,
+                hasNotificationPermission = hasNotifications,
                 isBatteryOptimizationIgnored = isBatteryIgnored
             )
         }

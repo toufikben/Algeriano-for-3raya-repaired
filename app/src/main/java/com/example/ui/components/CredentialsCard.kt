@@ -123,6 +123,16 @@ fun CredentialsCard(
                 }
             }
 
+            if (email.isBlank() || password.isBlank()) {
+                Text(
+                    text = "تنبيه: بدون بريد وكلمة مرور تطبيق صالحة سيتم حفظ الصورة والموقع محلياً فقط ولن يتم الإرسال.",
+                    color = Color(0xFFFCD34D),
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
 
             // Email Field

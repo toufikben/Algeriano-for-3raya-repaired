@@ -51,10 +51,12 @@ fun PermissionsStatusCard(
     isAdminActive: Boolean,
     hasCameraPermission: Boolean,
     hasLocationPermission: Boolean,
+    hasNotificationPermission: Boolean,
     isBatteryOptimizationIgnored: Boolean,
     onRequestAdmin: () -> Unit,
     onRequestCamera: () -> Unit,
     onRequestLocation: () -> Unit,
+    onRequestNotifications: () -> Unit,
     onRequestBatteryExemption: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -129,6 +131,18 @@ fun PermissionsStatusCard(
                 actionLabel = "منح إذن الموقع",
                 onAction = onRequestLocation,
                 testTag = "location_permission_item"
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            PermissionItemRow(
+                icon = Icons.Filled.Notifications,
+                title = "إذن الإشعارات",
+                description = "لعرض تحذير اقتراب انتهاء المؤقت ونتيجة الإرسال",
+                isGranted = hasNotificationPermission,
+                actionLabel = "منح إذن الإشعارات",
+                onAction = onRequestNotifications,
+                testTag = "notification_permission_item"
             )
 
             Spacer(modifier = Modifier.height(10.dp))

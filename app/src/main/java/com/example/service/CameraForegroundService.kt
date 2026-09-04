@@ -31,6 +31,7 @@ import com.example.R
 import com.example.SecurityApp
 import com.example.data.IntruderLog
 import com.example.data.SecurityPrefs
+import com.example.receiver.CountdownScheduler
 import com.example.util.EmailSender
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -38,6 +39,7 @@ import com.google.android.gms.location.Priority
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -46,11 +48,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 
 class CameraForegroundService : Service() {
 
     companion object {
         const val ACTION_CAPTURE_AND_SEND = "com.example.action.CAPTURE_AND_SEND"
+        const val ACTION_COUNTDOWN_EXPIRED = "com.example.action.COUNTDOWN_EXPIRED"
         const val ACTION_START_MONITORING = "com.example.action.START_MONITORING"
         const val ACTION_TEST_CAPTURE = "com.example.action.TEST_CAPTURE"
         const val ACTION_STOP_MONITORING = "com.example.action.STOP_MONITORING"
@@ -60,6 +64,7 @@ class CameraForegroundService : Service() {
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + Job())
+    private val captureInProgress = AtomicBoolean(false)
     private var cameraDevice: CameraDevice? = null
     private var imageReader: ImageReader? = null
     private var backgroundThread: HandlerThread? = null
@@ -82,9 +87,9 @@ class CameraForegroundService : Service() {
         }
 
         when (action) {
-            ACTION_CAPTURE_AND_SEND, ACTION_TEST_CAPTURE -> {
+            ACTION_CAPTURE_AND_SEND, ACTION_COUNTDOWN_EXPIRED, ACTION_TEST_CAPTURE -> {
                 val isTest = action == ACTION_TEST_CAPTURE
-                processIntruderCapture(isTest)
+                processIntruderCapture(isTest, action == ACTION_COUNTDOWN_EXPIRED)
             }
             ACTION_STOP_MONITORING -> {
                 stopForeground(true)
@@ -119,7 +124,15 @@ class CameraForegroundService : Service() {
             .build()
     }
 
-    private fun processIntruderCapture(isTest: Boolean) {
+    private fun processIntruderCapture(isTest: Boolean, isCountdownCapture: Boolean = false) {
+        if (!captureInProgress.compareAndSet(false, true)) {
+            Log.w(TAG, "Capture already in progress; ignoring duplicate request")
+            if (isCountdownCapture) {
+                CountdownScheduler.schedulePendingRetry(applicationContext)
+            }
+            return
+        }
+
         val wakeLock = acquireWakeLock()
 
         serviceScope.launch {
@@ -131,6 +144,17 @@ class CameraForegroundService : Service() {
 
                 // 1. Capture Image
                 val capturedFile = captureImageSilently()
+                val cameraPermissionGranted = ActivityCompat.checkSelfPermission(
+                    this@CameraForegroundService,
+                    Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
+                val locationPermissionGranted = ActivityCompat.checkSelfPermission(
+                    this@CameraForegroundService,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+                    this@CameraForegroundService,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
 
                 // 2. Fetch Location
                 val location = fetchCurrentLocation()
@@ -146,7 +170,12 @@ class CameraForegroundService : Service() {
                 val userEmail = prefs.email
                 val userPassword = prefs.password
                 var emailSuccess = false
-                var statusMsg = ""
+                var statusMsg = when {
+                    !cameraPermissionGranted -> "تعذر التقاط الصورة: إذن الكاميرا غير ممنوح"
+                    capturedFile == null -> "تعذر التقاط الصورة من الكاميرا"
+                    !locationPermissionGranted -> "تم التقاط الصورة، لكن إذن الموقع غير ممنوح"
+                    else -> ""
+                }
 
                 if (userEmail.isNotBlank() && userPassword.isNotBlank()) {
                     val subject = if (isTest) {
@@ -180,13 +209,20 @@ class CameraForegroundService : Service() {
                     )
 
                     emailSuccess = sendResult.isSuccess
-                    statusMsg = if (emailSuccess) {
+                    val emailStatus = if (emailSuccess) {
                         "تم إرسال بريد التنبيه بنجاح مع الصورة والموقع"
                     } else {
                         "فشل الإرسال: ${sendResult.errorMessage}"
                     }
+                    statusMsg = listOf(statusMsg, emailStatus)
+                        .filter { it.isNotBlank() }
+                        .joinToString("؛ ")
                 } else {
-                    statusMsg = "تم حفظ الصورة محلياً (البريد الإلكتروني غير مهيأ)"
+                    statusMsg = if (statusMsg.isBlank()) {
+                        "تم حفظ الصورة محلياً (البريد الإلكتروني غير مهيأ)"
+                    } else {
+                        "$statusMsg؛ البريد الإلكتروني غير مهيأ، لذلك لم يتم الإرسال"
+                    }
                 }
 
                 // 4. Save Log
@@ -205,9 +241,17 @@ class CameraForegroundService : Service() {
                 // 5. Show alert notification
                 showAlertNotification(isTest, timeStr, emailSuccess)
 
+                if (isCountdownCapture) {
+                    prefs.clearCountdown()
+                }
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error in processIntruderCapture", e)
+                if (isCountdownCapture) {
+                    CountdownScheduler.schedulePendingRetry(applicationContext)
+                }
             } finally {
+                captureInProgress.set(false)
                 wakeLock?.release()
                 if (!isServicePersistent()) {
                     stopForeground(false)
@@ -472,6 +516,7 @@ class CameraForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        serviceScope.cancel()
         super.onDestroy()
         closeCamera()
         stopBackgroundThread()

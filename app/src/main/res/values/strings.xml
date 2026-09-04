@@ -7,4 +7,5 @@
     <string name="notification_text">جاري مراقبة محاولات فتح القفل غير المصرح بها</string>
     <string name="notification_alert_title">تنبيه أمان: تم رصد محاولة اختراق!</string>
     <string name="notification_alert_text">تم التقاط صورة المتسلل وجاري إرسال البريد الإلكتروني</string>
+    <string name="notification_countdown_desc">تنبيهات مؤقت الحماية واقتراب انتهائه</string>
 </resources>

@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
@@ -90,17 +91,22 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.example.receiver.MyDeviceAdminReceiver
 import com.example.ui.components.AppPasswordGuideDialog
+import com.example.ui.components.AppPinGate
 import com.example.ui.components.CredentialsCard
+import com.example.ui.components.CountdownCard
 import com.example.ui.components.DeveloperInfoDialog
 import com.example.ui.components.IntruderLogsCard
 import com.example.ui.components.PermissionsStatusCard
+import com.example.ui.components.PinManagementDialog
 import com.example.ui.components.ProtectionToggleCard
+import com.example.ui.components.SecurityStatusCard
 import com.example.ui.theme.CyanAccent
 import com.example.ui.theme.CyberNavyBg
 import com.example.ui.theme.CyberNavySurface
 import com.example.ui.theme.EmeraldActive
 import com.example.ui.theme.MyApplicationTheme
 import com.example.viewmodel.SecurityViewModel
+import com.example.data.SecurityPrefs
 
 class MainActivity : ComponentActivity() {
 
@@ -115,11 +121,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             MyApplicationTheme {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    SecurityMainScreen(
-                        viewModel = viewModel,
-                        onRequestAdmin = { requestDeviceAdmin() },
-                        onRequestBatteryExemption = { requestBatteryExemption() }
-                    )
+                    AppPinGate(SecurityPrefs.getInstance(this@MainActivity)) {
+                        SecurityMainScreen(
+                            viewModel = viewModel,
+                            onRequestAdmin = { requestDeviceAdmin() },
+                            onRequestBatteryExemption = { requestBatteryExemption() }
+                        )
+                    }
                 }
             }
         }
@@ -174,6 +182,7 @@ fun SecurityMainScreen(
 
     var showDeveloperInfo by remember { mutableStateOf(false) }
     var showAppPasswordGuide by remember { mutableStateOf(false) }
+    var showPinManagement by remember { mutableStateOf(false) }
 
     // Lifecycle observer to refresh statuses when returning from system settings
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -248,6 +257,16 @@ fun SecurityMainScreen(
                 },
                 actions = {
                     IconButton(
+                        onClick = { showPinManagement = true },
+                        modifier = Modifier.testTag("pin_management_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Key,
+                            contentDescription = "تغيير PIN التطبيق",
+                            tint = Color.White
+                        )
+                    }
+                    IconButton(
                         onClick = { showAppPasswordGuide = true },
                         modifier = Modifier.testTag("guide_icon_button")
                     ) {
@@ -299,6 +318,17 @@ fun SecurityMainScreen(
                 )
             }
 
+            item {
+                SecurityStatusCard(
+                    isTrackingEnabled = uiState.isTrackingEnabled,
+                    isAdminActive = uiState.isAdminActive,
+                    hasCameraPermission = uiState.hasCameraPermission,
+                    hasLocationPermission = uiState.hasLocationPermission,
+                    hasNotificationPermission = uiState.hasNotificationPermission,
+                    emailConfigured = uiState.email.isNotBlank() && uiState.password.isNotBlank()
+                )
+            }
+
             // 1. Protection Switch & Live Toggle
             item {
                 ProtectionToggleCard(
@@ -318,7 +348,19 @@ fun SecurityMainScreen(
                 )
             }
 
-            // 2. Email & App Password Configuration
+            // 2. Countdown fallback protection
+            item {
+                CountdownCard(
+                    isTrackingEnabled = uiState.isTrackingEnabled,
+                    countdownEnabled = uiState.countdownEnabled,
+                    remainingMillis = uiState.countdownRemainingMillis,
+                    selectedDurationMillis = uiState.countdownDurationMillis,
+                    onStart = viewModel::startCountdown,
+                    onCancel = viewModel::cancelCountdown
+                )
+            }
+
+            // 3. Email & App Password Configuration
             item {
                 CredentialsCard(
                     email = uiState.email,
@@ -349,6 +391,11 @@ fun SecurityMainScreen(
                                 Manifest.permission.ACCESS_COARSE_LOCATION
                             )
                         )
+                    },
+                    onRequestNotifications = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionLauncher.launch(arrayOf(Manifest.permission.POST_NOTIFICATIONS))
+                        }
                     },
                     onRequestBatteryExemption = onRequestBatteryExemption
                 )
@@ -401,6 +448,14 @@ fun SecurityMainScreen(
     // App Password Guide Dialog
     if (showAppPasswordGuide) {
         AppPasswordGuideDialog(onDismiss = { showAppPasswordGuide = false })
+    }
+
+    if (showPinManagement) {
+        PinManagementDialog(
+            context = context,
+            prefs = SecurityPrefs.getInstance(context),
+            onDismiss = { showPinManagement = false }
+        )
     }
 }
 

@@ -16,6 +16,7 @@ class BootReceiver : BroadcastReceiver() {
 
         if (Intent.ACTION_BOOT_COMPLETED == action || "android.intent.action.QUICKBOOT_POWERON" == action) {
             val prefs = SecurityPrefs.getInstance(context)
+            CountdownScheduler.rescheduleFromPrefs(context)
             if (prefs.isTrackingEnabled) {
                 Log.d("BootReceiver", "Tracking is enabled, starting monitoring service")
                 val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
