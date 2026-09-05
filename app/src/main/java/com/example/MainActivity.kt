@@ -379,6 +379,7 @@ fun SecurityMainScreen(
                     isAdminActive = uiState.isAdminActive,
                     hasCameraPermission = uiState.hasCameraPermission,
                     hasLocationPermission = uiState.hasLocationPermission,
+                    hasNotificationPermission = uiState.hasNotificationPermission,
                     isBatteryOptimizationIgnored = uiState.isBatteryOptimizationIgnored,
                     onRequestAdmin = onRequestAdmin,
                     onRequestCamera = {
