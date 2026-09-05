@@ -470,6 +470,16 @@ class CameraForegroundService : Service() {
             .setAutoCancel(true)
             .build()
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w(TAG, "Notification permission not granted; skipping alert notification")
+            return
+        }
+
         try {
             NotificationManagerCompat.from(this).notify(ALERT_NOTIFICATION_ID, notification)
         } catch (e: Exception) {
