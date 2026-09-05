@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
+import android.app.ForegroundServiceStartNotAllowedException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -83,7 +84,18 @@ class CameraForegroundService : Service() {
         try {
             startForeground(NOTIFICATION_ID, notification)
         } catch (e: Exception) {
-            Log.e(TAG, "startForeground error", e)
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    e is ForegroundServiceStartNotAllowedException -> {
+                    Log.e(TAG, "Foreground service start not allowed by the system", e)
+                }
+                e is SecurityException -> {
+                    Log.e(TAG, "Foreground service permission is missing", e)
+                }
+                else -> Log.e(TAG, "startForeground error", e)
+            }
+            stopSelf(startId)
+            return START_NOT_STICKY
         }
 
         when (action) {
@@ -321,11 +333,15 @@ class CameraForegroundService : Service() {
                         fos.flush()
                     }
                     outputFile = file
-                    captureCompleted.complete(file)
+                    if (!captureCompleted.isCompleted) {
+                        captureCompleted.complete(file)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving captured image", e)
-                captureCompleted.complete(null)
+                if (!captureCompleted.isCompleted) {
+                    captureCompleted.complete(null)
+                }
             } finally {
                 closeCamera()
             }
@@ -350,14 +366,18 @@ class CameraForegroundService : Service() {
                                         session.capture(captureBuilder.build(), null, backgroundHandler)
                                     } catch (e: CameraAccessException) {
                                         Log.e(TAG, "Capture failed", e)
-                                        captureCompleted.complete(null)
+                                        if (!captureCompleted.isCompleted) {
+                                            captureCompleted.complete(null)
+                                        }
                                         closeCamera()
                                     }
                                 }
 
                                 override fun onConfigureFailed(session: CameraCaptureSession) {
                                     Log.e(TAG, "Capture session configuration failed")
-                                    captureCompleted.complete(null)
+                                    if (!captureCompleted.isCompleted) {
+                                        captureCompleted.complete(null)
+                                    }
                                     closeCamera()
                                 }
                             },
@@ -365,7 +385,9 @@ class CameraForegroundService : Service() {
                         )
                     } catch (e: Exception) {
                         Log.e(TAG, "Error starting capture session", e)
-                        captureCompleted.complete(null)
+                        if (!captureCompleted.isCompleted) {
+                            captureCompleted.complete(null)
+                        }
                         closeCamera()
                     }
                 }
@@ -373,14 +395,18 @@ class CameraForegroundService : Service() {
                 override fun onDisconnected(camera: CameraDevice) {
                     camera.close()
                     cameraDevice = null
-                    captureCompleted.complete(null)
+                    if (!captureCompleted.isCompleted) {
+                        captureCompleted.complete(null)
+                    }
                 }
 
                 override fun onError(camera: CameraDevice, error: Int) {
                     camera.close()
                     cameraDevice = null
                     Log.e(TAG, "CameraDevice error: $error")
-                    captureCompleted.complete(null)
+                    if (!captureCompleted.isCompleted) {
+                        captureCompleted.complete(null)
+                    }
                 }
             }, backgroundHandler)
         } catch (e: Exception) {
@@ -390,10 +416,20 @@ class CameraForegroundService : Service() {
 
         // Wait with a 6-second timeout
         try {
-            kotlinx.coroutines.withTimeoutOrNull(6000L) {
+            val capturedFile = kotlinx.coroutines.withTimeoutOrNull(6000L) {
                 captureCompleted.await()
-            } ?: outputFile
+            }
+            if (capturedFile == null) {
+                Log.w(TAG, "Camera capture timed out; closing camera resources")
+                if (!captureCompleted.isCompleted) {
+                    captureCompleted.complete(null)
+                }
+                closeCamera()
+            }
+            capturedFile ?: outputFile
         } catch (e: Exception) {
+            Log.e(TAG, "Error waiting for camera capture; closing camera resources", e)
+            closeCamera()
             null
         }
     }

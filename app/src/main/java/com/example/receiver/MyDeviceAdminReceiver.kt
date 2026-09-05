@@ -1,6 +1,7 @@
 package com.example.receiver
 
 import android.app.admin.DeviceAdminReceiver
+import android.app.ForegroundServiceStartNotAllowedException
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -38,7 +39,17 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
                     context.startService(serviceIntent)
                 }
             } catch (e: Exception) {
-                Log.e("DeviceAdminReceiver", "Failed to start foreground service", e)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    e is ForegroundServiceStartNotAllowedException
+                ) {
+                    Log.e(
+                        "DeviceAdminReceiver",
+                        "System rejected foreground service start while app is in background",
+                        e
+                    )
+                } else {
+                    Log.e("DeviceAdminReceiver", "Failed to start foreground service", e)
+                }
             }
         } else {
             Log.d("DeviceAdminReceiver", "Capture deferred until the threshold is reached")
