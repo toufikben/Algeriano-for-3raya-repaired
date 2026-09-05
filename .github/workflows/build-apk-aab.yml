@@ -12,7 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  JDK_VERSION: 17
+  # Robolectric 4.16+ requires JDK 21 when testing against Android SDK 36.
+  JDK_VERSION: 21
 
 permissions:
   contents: read
