@@ -18,6 +18,14 @@ class BootReceiver : BroadcastReceiver() {
             val prefs = SecurityPrefs.getInstance(context)
             CountdownScheduler.rescheduleFromPrefs(context)
             if (prefs.isTrackingEnabled) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    Log.w(
+                        "BootReceiver",
+                        "Skipping camera foreground service start after boot on Android 14+; " +
+                            "the user must start protection while the app is visible"
+                    )
+                    return
+                }
                 Log.d("BootReceiver", "Tracking is enabled, starting monitoring service")
                 val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
                     this.action = CameraForegroundService.ACTION_START_MONITORING

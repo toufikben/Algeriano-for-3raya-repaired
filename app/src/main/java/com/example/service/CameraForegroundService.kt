@@ -8,6 +8,7 @@ import android.app.ForegroundServiceStartNotAllowedException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.graphics.ImageFormat
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
@@ -27,6 +28,7 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.ServiceCompat
 import com.example.MainActivity
 import com.example.R
 import com.example.SecurityApp
@@ -70,6 +72,7 @@ class CameraForegroundService : Service() {
     private var imageReader: ImageReader? = null
     private var backgroundThread: HandlerThread? = null
     private var backgroundHandler: Handler? = null
+    private var foregroundStarted = false
 
     override fun onCreate() {
         super.onCreate()
@@ -80,22 +83,19 @@ class CameraForegroundService : Service() {
         val action = intent?.action ?: ACTION_CAPTURE_AND_SEND
         Log.d(TAG, "onStartCommand action: $action")
 
-        val notification = buildForegroundNotification()
-        try {
-            startForeground(NOTIFICATION_ID, notification)
-        } catch (e: Exception) {
-            when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                    e is ForegroundServiceStartNotAllowedException -> {
-                    Log.e(TAG, "Foreground service start not allowed by the system", e)
-                }
-                e is SecurityException -> {
-                    Log.e(TAG, "Foreground service permission is missing", e)
-                }
-                else -> Log.e(TAG, "startForeground error", e)
-            }
-            stopSelf(startId)
+        if (action == ACTION_STOP_MONITORING) {
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+            foregroundStarted = false
+            stopSelf()
             return START_NOT_STICKY
+        }
+
+        if (!foregroundStarted) {
+            if (!promoteToForeground(buildForegroundNotification())) {
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
+            foregroundStarted = true
         }
 
         when (action) {
@@ -103,16 +103,62 @@ class CameraForegroundService : Service() {
                 val isTest = action == ACTION_TEST_CAPTURE
                 processIntruderCapture(isTest, action == ACTION_COUNTDOWN_EXPIRED)
             }
-            ACTION_STOP_MONITORING -> {
-                stopForeground(true)
-                stopSelf()
-            }
-            ACTION_START_MONITORING -> {
-                // Keep running as background guard
-            }
+            ACTION_START_MONITORING -> Unit
         }
 
         return START_NOT_STICKY
+    }
+
+    private fun promoteToForeground(notification: Notification): Boolean {
+        val hasCameraPermission = ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!hasCameraPermission) {
+            Log.e(TAG, "Cannot start camera foreground service without CAMERA permission")
+            return false
+        }
+
+        val hasLocationPermission = ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val foregroundServiceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
+                if (hasLocationPermission) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                } else {
+                    0
+                }
+        } else {
+            0
+        }
+
+        return try {
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                notification,
+                foregroundServiceType
+            )
+            true
+        } catch (e: Exception) {
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    e is ForegroundServiceStartNotAllowedException -> {
+                    Log.e(TAG, "Foreground service start not allowed by the system", e)
+                }
+                e is SecurityException -> {
+                    Log.e(TAG, "Foreground service permission or while-in-use access is missing", e)
+                }
+                else -> Log.e(TAG, "Unable to promote service to foreground", e)
+            }
+            false
+        }
     }
 
     private fun buildForegroundNotification(): Notification {
@@ -563,6 +609,7 @@ class CameraForegroundService : Service() {
 
     override fun onDestroy() {
         serviceScope.cancel()
+        foregroundStarted = false
         super.onDestroy()
         closeCamera()
         stopBackgroundThread()

@@ -1,5 +1,6 @@
 package com.example.viewmodel
 
+import android.app.ForegroundServiceStartNotAllowedException
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -141,7 +142,16 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
                 context.stopService(serviceIntent)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            val message = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    e is ForegroundServiceStartNotAllowedException ->
+                    "رفض النظام تشغيل خدمة الحماية من الخلفية؛ افتح التطبيق وشغّل الحماية من الواجهة"
+                e is SecurityException ->
+                    "لا يمكن تشغيل الخدمة؛ تحقق من صلاحيات الكاميرا والموقع"
+                else -> "تعذر تشغيل خدمة الحماية"
+            }
+            _uiState.update { it.copy(bannerMessage = message, isTrackingEnabled = false) }
+            prefs.isTrackingEnabled = false
         }
     }
 
@@ -158,7 +168,15 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
                 context.startService(serviceIntent)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            val message = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    e is ForegroundServiceStartNotAllowedException ->
+                    "رفض النظام الاختبار من الخلفية؛ أعد المحاولة والتطبيق مفتوح"
+                e is SecurityException ->
+                    "لا يمكن اختبار الكاميرا؛ تحقق من صلاحية الكاميرا"
+                else -> "تعذر تشغيل اختبار الكاميرا"
+            }
+            _uiState.update { it.copy(bannerMessage = message, isTesting = false) }
         }
 
         viewModelScope.launch {
