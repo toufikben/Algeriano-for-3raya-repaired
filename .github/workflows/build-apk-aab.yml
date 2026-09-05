@@ -7,61 +7,77 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   JDK_VERSION: 17
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    name: Build and verify Android artifacts
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v5
         with:
           java-version: ${{ env.JDK_VERSION }}
           distribution: temurin
+          cache: gradle
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Create debug keystore
-        run: |
-          keytool -genkeypair -noprompt -v \
-            -keystore debug.keystore \
-            -alias androiddebugkey \
-            -keypass android \
-            -storepass android \
-            -dname "CN=Debug Certificate, OU=App, O=Company, L=City, ST=State, C=US" \
-            -validity 365 \
-            -keyalg RSA \
-            -keysize 2048
-
-      - name: Decode permanent upload keystore
+      - name: Validate signing secrets
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
-
-          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+          test -n "$ANDROID_KEYSTORE_BASE64" || {
             echo "::error::ANDROID_KEYSTORE_BASE64 is not configured"
             exit 1
-          fi
+          }
+          test -n "$STORE_PASSWORD" || {
+            echo "::error::STORE_PASSWORD is not configured"
+            exit 1
+          }
+          test -n "$KEY_PASSWORD" || {
+            echo "::error::KEY_PASSWORD is not configured"
+            exit 1
+          }
 
+      - name: Decode upload keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/algeriano-upload-key.jks"
           chmod 600 "$RUNNER_TEMP/algeriano-upload-key.jks"
-
           {
             echo "KEYSTORE_PATH=$RUNNER_TEMP/algeriano-upload-key.jks"
             echo "STORE_PASSWORD=$STORE_PASSWORD"
             echo "KEY_PASSWORD=$KEY_PASSWORD"
+            if [ -n "$KEY_ALIAS" ]; then
+              echo "KEY_ALIAS=$KEY_ALIAS"
+            fi
           } >> "$GITHUB_ENV"
+
+      - name: Run tests and lint
+        run: ./gradlew testDebugUnitTest lintDebug --stacktrace --no-daemon
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace --no-daemon
@@ -72,29 +88,36 @@ jobs:
       - name: Build Release AAB
         run: ./gradlew bundleRelease --stacktrace --no-daemon
 
+      - name: Verify Android artifacts
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS_VERSION="$(ls -1 "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)"
+          APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+          "$APKSIGNER" verify --verbose app/build/outputs/apk/debug/app-debug.apk
+          "$APKSIGNER" verify --verbose app/build/outputs/apk/release/app-release.apk
+          unzip -t app/build/outputs/bundle/release/app-release.aab >/dev/null
+          echo "Android artifacts verified successfully"
+
       - name: Upload Debug APK
-        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: apk-debug
+          name: apk-debug-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
 
       - name: Upload Release APK
-        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: apk-release
+          name: apk-release-${{ github.run_number }}
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
 
       - name: Upload Release AAB
-        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: aab-release
+          name: aab-release-${{ github.run_number }}
           path: app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 30
