@@ -59,6 +59,11 @@ class SecurityPrefs private constructor(private val context: Context) {
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private val store = SecurityStore(context)
+
+    init {
+        migrateLegacyStorageIfNeeded()
+    }
 
     private val _trackingEnabledFlow = MutableStateFlow(isTrackingEnabled)
     val trackingEnabledFlow: StateFlow<Boolean> = _trackingEnabledFlow.asStateFlow()
@@ -241,7 +246,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     @Synchronized
     fun resetFailedUnlockAttempts() {
         prefs.edit().putInt(KEY_FAILED_UNLOCK_ATTEMPTS, 0).apply()
-        updateSecurityEvents { events ->
+        updateSecurityEventsInRoom { events ->
             events.map { event ->
                 if (event.status == SecurityEventStatus.PENDING ||
                     event.status == SecurityEventStatus.IN_PROGRESS ||
@@ -261,14 +266,14 @@ class SecurityPrefs private constructor(private val context: Context) {
             status = SecurityEventStatus.PENDING,
             updatedAt = timestamp
         )
-        updateSecurityEvents { (it + event).takeLast(MAX_SECURITY_EVENTS) }
+        updateSecurityEventsInRoom { (it + event).takeLast(MAX_SECURITY_EVENTS) }
         return event
     }
 
     @Synchronized
     fun claimNextSecurityEvent(): SecurityEvent? {
-        val next = getSecurityEvents().firstOrNull { it.status == SecurityEventStatus.PENDING } ?: return null
-        updateSecurityEvents { events ->
+        val next = getSecurityEventsFromRoom().firstOrNull { it.status == SecurityEventStatus.PENDING } ?: return null
+        updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == next.id) it.copy(
                     status = SecurityEventStatus.IN_PROGRESS,
@@ -281,9 +286,9 @@ class SecurityPrefs private constructor(private val context: Context) {
 
     @Synchronized
     fun claimSecurityEvent(id: String): Boolean {
-        val event = getSecurityEvents().firstOrNull { it.id == id } ?: return false
+        val event = getSecurityEventsFromRoom().firstOrNull { it.id == id } ?: return false
         if (event.status != SecurityEventStatus.PENDING) return false
-        updateSecurityEvents { events ->
+        updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == id) it.copy(
                     status = SecurityEventStatus.IN_PROGRESS,
@@ -296,7 +301,7 @@ class SecurityPrefs private constructor(private val context: Context) {
 
     @Synchronized
     fun completeSecurityEvent(id: String, status: SecurityEventStatus) {
-        updateSecurityEvents { events ->
+        updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == id && (it.status == SecurityEventStatus.IN_PROGRESS ||
                         it.status == SecurityEventStatus.SEND_PENDING)) {
@@ -309,7 +314,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     }
 
     @Synchronized
-    fun getSecurityEvent(id: String): SecurityEvent? = getSecurityEvents().firstOrNull { it.id == id }
+    fun getSecurityEvent(id: String): SecurityEvent? = getSecurityEventsFromRoom().firstOrNull { it.id == id }
 
     @Synchronized
     fun recordCaptureResult(
@@ -319,7 +324,7 @@ class SecurityPrefs private constructor(private val context: Context) {
         longitude: Double?,
         locationTimestamp: Long?
     ) {
-        updateSecurityEvents { events ->
+        updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == id && it.status == SecurityEventStatus.IN_PROGRESS) {
                     it.copy(
@@ -338,7 +343,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     @Synchronized
     fun recordSendRetry(id: String): Boolean {
         var retry = false
-        updateSecurityEvents { events ->
+        updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == id && it.status == SecurityEventStatus.SEND_PENDING) {
                     val attempts = it.sendAttempts + 1
@@ -357,7 +362,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     @Synchronized
     fun markSendPendingForRetry(id: String): Boolean {
         var changed = false
-        updateSecurityEvents { events ->
+        updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == id && it.status == SecurityEventStatus.FAILED_RETRYABLE) {
                     changed = true
@@ -370,7 +375,7 @@ class SecurityPrefs private constructor(private val context: Context) {
 
     @Synchronized
     fun failPendingSecurityEvent(id: String) {
-        updateSecurityEvents { events ->
+        updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == id && it.status == SecurityEventStatus.PENDING) {
                     it.copy(status = SecurityEventStatus.FAILED, updatedAt = System.currentTimeMillis())
@@ -380,7 +385,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     }
 
     fun hasPendingSecurityEvents(): Boolean = synchronized(this) {
-        getSecurityEvents().any {
+        getSecurityEventsFromRoom().any {
             it.status == SecurityEventStatus.PENDING ||
                 it.status == SecurityEventStatus.IN_PROGRESS ||
                 it.status == SecurityEventStatus.SEND_PENDING ||
@@ -389,7 +394,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     }
 
     fun getPendingSecurityEvents(): List<SecurityEvent> = synchronized(this) {
-        getSecurityEvents().filter {
+        getSecurityEventsFromRoom().filter {
             it.status == SecurityEventStatus.PENDING ||
                 it.status == SecurityEventStatus.SEND_PENDING ||
                 it.status == SecurityEventStatus.FAILED_RETRYABLE
@@ -400,7 +405,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     @Synchronized
     fun recoverStaleSecurityEvents(now: Long = System.currentTimeMillis()): Int {
         var recovered = 0
-        updateSecurityEvents { events ->
+        updateSecurityEventsInRoom { events ->
             events.map { event ->
                 val stale = (event.status == SecurityEventStatus.IN_PROGRESS ||
                     event.status == SecurityEventStatus.SEND_PENDING) &&
@@ -423,7 +428,7 @@ class SecurityPrefs private constructor(private val context: Context) {
         return recovered
     }
 
-    private fun getSecurityEvents(): List<SecurityEvent> {
+    private fun readLegacySecurityEvents(): List<SecurityEvent> {
         val json = prefs.getString(KEY_SECURITY_EVENTS_JSON, "[]") ?: "[]"
         return try {
             val array = JSONArray(json)
@@ -451,24 +456,20 @@ class SecurityPrefs private constructor(private val context: Context) {
         }
     }
 
-    private fun updateSecurityEvents(transform: (List<SecurityEvent>) -> List<SecurityEvent>) {
-        val array = JSONArray()
-        transform(getSecurityEvents()).takeLast(MAX_SECURITY_EVENTS).forEach { event ->
-            array.put(JSONObject().apply {
-                put("id", event.id)
-                put("timestamp", event.timestamp)
-                put("failedAttempt", event.failedAttempt)
-                put("status", event.status.name)
-                put("updatedAt", event.updatedAt)
-                put("recoveryAttempts", event.recoveryAttempts)
-                put("sendAttempts", event.sendAttempts)
-                event.photoPath?.let { put("photoPath", it) }
-                event.latitude?.let { put("latitude", it) }
-                event.longitude?.let { put("longitude", it) }
-                event.locationTimestamp?.let { put("locationTimestamp", it) }
-            })
+    private fun getSecurityEventsFromRoom(): List<SecurityEvent> = store.events()
+
+    private fun updateSecurityEventsInRoom(transform: (List<SecurityEvent>) -> List<SecurityEvent>) {
+        store.replaceEvents(transform(store.events()).takeLast(MAX_SECURITY_EVENTS))
+    }
+
+    private fun migrateLegacyStorageIfNeeded() {
+        val legacyEvents = readLegacySecurityEvents()
+        val legacyLogs = readLegacyLogs()
+        if (store.events().isEmpty() && legacyEvents.isNotEmpty()) store.replaceEvents(legacyEvents)
+        if (store.logs().isEmpty() && legacyLogs.isNotEmpty()) store.replaceLogs(legacyLogs)
+        if (legacyEvents.isNotEmpty() || legacyLogs.isNotEmpty()) {
+            prefs.edit().remove(KEY_SECURITY_EVENTS_JSON).remove(KEY_LOGS_JSON).apply()
         }
-        prefs.edit().putString(KEY_SECURITY_EVENTS_JSON, array.toString()).apply()
     }
 
     val hasAppPin: Boolean
@@ -593,7 +594,7 @@ class SecurityPrefs private constructor(private val context: Context) {
         _logsFlow.value = trimmed
     }
 
-    fun getLogs(): List<IntruderLog> {
+    private fun readLegacyLogs(): List<IntruderLog> {
         val jsonString = prefs.getString(KEY_LOGS_JSON, "[]") ?: "[]"
         val list = mutableListOf<IntruderLog>()
         try {
@@ -630,30 +631,9 @@ class SecurityPrefs private constructor(private val context: Context) {
         return list
     }
 
-    private fun saveLogs(logs: List<IntruderLog>) {
-        try {
-            val jsonArray = JSONArray()
-            for (log in logs) {
-                val obj = JSONObject().apply {
-                    put("id", log.id)
-                    log.eventId?.let { put("eventId", it) }
-                    put("photoCaptured", log.photoCaptured)
-                    put("locationCaptured", log.locationCaptured)
-                    put("timestamp", log.timestamp)
-                    put("photoPath", log.photoPath ?: "")
-                    if (log.latitude != null) put("latitude", log.latitude)
-                    if (log.longitude != null) put("longitude", log.longitude)
-                    put("address", log.address ?: "")
-                    put("emailSent", log.emailSent)
-                    put("statusMessage", log.statusMessage)
-                }
-                jsonArray.put(obj)
-            }
-            prefs.edit().putString(KEY_LOGS_JSON, jsonArray.toString()).apply()
-        } catch (e: Exception) {
-            Log.e("SecurityPrefs", "Unable to persist intruder logs", e)
-        }
-    }
+    private fun saveLogs(logs: List<IntruderLog>) = store.replaceLogs(logs)
+
+    fun getLogs(): List<IntruderLog> = store.logs()
 
     fun clearLogs() {
         // Optionally delete image files
