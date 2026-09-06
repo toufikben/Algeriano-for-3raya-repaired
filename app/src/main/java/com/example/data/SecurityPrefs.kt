@@ -303,8 +303,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     fun completeSecurityEvent(id: String, status: SecurityEventStatus) {
         updateSecurityEventsInRoom { events ->
             events.map {
-                if (it.id == id && (it.status == SecurityEventStatus.IN_PROGRESS ||
-                        it.status == SecurityEventStatus.SEND_PENDING)) {
+                if (it.id == id && SecurityEventStateMachine.canTransition(it.status, status)) {
                     it.copy(status = status, updatedAt = System.currentTimeMillis())
                 } else {
                     it
@@ -364,7 +363,10 @@ class SecurityPrefs private constructor(private val context: Context) {
         var changed = false
         updateSecurityEventsInRoom { events ->
             events.map {
-                if (it.id == id && it.status == SecurityEventStatus.FAILED_RETRYABLE) {
+                if (it.id == id && SecurityEventStateMachine.canTransition(
+                        it.status,
+                        SecurityEventStatus.SEND_PENDING
+                    )) {
                     changed = true
                     it.copy(status = SecurityEventStatus.SEND_PENDING, updatedAt = System.currentTimeMillis())
                 } else it
@@ -377,7 +379,10 @@ class SecurityPrefs private constructor(private val context: Context) {
     fun failPendingSecurityEvent(id: String) {
         updateSecurityEventsInRoom { events ->
             events.map {
-                if (it.id == id && it.status == SecurityEventStatus.PENDING) {
+                if (it.id == id && SecurityEventStateMachine.canTransition(
+                        it.status,
+                        SecurityEventStatus.FAILED
+                    )) {
                     it.copy(status = SecurityEventStatus.FAILED, updatedAt = System.currentTimeMillis())
                 } else it
             }
