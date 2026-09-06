@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,9 +61,11 @@ fun CountdownCard(
     countdownEnabled: Boolean,
     remainingMillis: Long,
     selectedDurationMillis: Long,
+    autoRestart: Boolean,
     onStart: (Long) -> Unit,
     onReset: () -> Unit,
     onCancel: () -> Unit,
+    onAutoRestartChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showStopConfirmation by remember { mutableStateOf(false) }
@@ -130,6 +133,16 @@ fun CountdownCard(
                     Icon(Icons.Filled.StopCircle, contentDescription = "إيقاف المؤقت")
                     Spacer(Modifier.width(8.dp))
                     Text("إيقاف المؤقت")
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("إعادة التشغيل تلقائيًا", color = Color.White, fontSize = 14.sp)
+                        Text("بعد الإرسال يعاد المؤقت بنفس المدة", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                    }
+                    Switch(checked = autoRestart, onCheckedChange = onAutoRestartChange)
                 }
             } else {
                 Text("اختر مدة المؤقت", color = Color(0xFFCBD5E1), fontSize = 12.sp)

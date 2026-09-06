@@ -89,6 +89,7 @@ class SecurityPrefs private constructor(private val context: Context) {
         private const val KEY_COUNTDOWN_CAPTURE_PENDING = "key_countdown_capture_pending"
         private const val KEY_COUNTDOWN_RETRY_COUNT = "key_countdown_retry_count"
         private const val KEY_COUNTDOWN_EVENT_ID = "key_countdown_event_id"
+        private const val KEY_COUNTDOWN_AUTO_RESTART = "key_countdown_auto_restart"
         private const val KEY_APP_PIN_SALT = "key_app_pin_salt"
         private const val KEY_APP_PIN_HASH = "key_app_pin_hash"
         private const val KEY_PIN_FAILED_ATTEMPTS = "key_pin_failed_attempts"
@@ -588,6 +589,10 @@ class SecurityPrefs private constructor(private val context: Context) {
     var countdownEventId: String
         get() = prefs.getString(KEY_COUNTDOWN_EVENT_ID, "") ?: ""
         set(value) = prefs.edit().putString(KEY_COUNTDOWN_EVENT_ID, value).apply()
+
+    var countdownAutoRestart: Boolean
+        get() = prefs.getBoolean(KEY_COUNTDOWN_AUTO_RESTART, false)
+        set(value) = prefs.edit().putBoolean(KEY_COUNTDOWN_AUTO_RESTART, value).apply()
 
     fun clearCountdown() {
         prefs.edit()

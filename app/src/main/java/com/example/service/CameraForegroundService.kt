@@ -397,7 +397,12 @@ class CameraForegroundService : Service() {
                 )
 
                 if (isCountdownCapture) {
-                    prefs.clearCountdown()
+                    if (prefs.countdownAutoRestart && prefs.isTrackingEnabled) {
+                        CountdownScheduler.start(applicationContext, prefs.countdownDurationMillis)
+                        Log.d(TAG, "Countdown completed; automatically scheduled again")
+                    } else {
+                        prefs.clearCountdown()
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error in processIntruderCapture", e)

@@ -43,7 +43,8 @@ data class SecurityUiState(
     val countdownEnabled: Boolean = false,
     val countdownEndTime: Long = 0L,
     val countdownDurationMillis: Long = 60 * 60 * 1000L,
-    val countdownRemainingMillis: Long = 0L
+    val countdownRemainingMillis: Long = 0L,
+    val countdownAutoRestart: Boolean = false
 )
 
 class SecurityViewModel(private val context: Context) : ViewModel() {
@@ -59,7 +60,8 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             countdownEnabled = prefs.countdownEnabled,
             countdownEndTime = prefs.countdownEndTime,
             countdownDurationMillis = prefs.countdownDurationMillis,
-            countdownRemainingMillis = remainingCountdownMillis()
+            countdownRemainingMillis = remainingCountdownMillis(),
+            countdownAutoRestart = prefs.countdownAutoRestart
         )
     )
     val uiState: StateFlow<SecurityUiState> = _uiState.asStateFlow()
@@ -90,7 +92,8 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
                     it.copy(
                         countdownEnabled = prefs.countdownEnabled,
                         countdownEndTime = prefs.countdownEndTime,
-                        countdownRemainingMillis = remainingCountdownMillis()
+                        countdownRemainingMillis = remainingCountdownMillis(),
+                        countdownAutoRestart = prefs.countdownAutoRestart
                     )
                 }
             }
@@ -258,6 +261,11 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             prefs.clearLogs()
         }
+    }
+
+    fun setCountdownAutoRestart(enabled: Boolean) {
+        prefs.countdownAutoRestart = enabled
+        _uiState.update { it.copy(countdownAutoRestart = enabled) }
     }
 
     fun dismissBanner() {
