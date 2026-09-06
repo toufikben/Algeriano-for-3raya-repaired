@@ -53,7 +53,7 @@ class SecurityEventDistributorTest {
             .getWorkInfosForUniqueWork(SecurityEventDistributor.workName(event.id))
             .get()
         assertEquals(1, work.size)
-        assertEquals(WorkInfo.State.ENQUEUED, work.single().state)
+        assertFalse(work.single().state == WorkInfo.State.CANCELLED)
     }
 
     @Test

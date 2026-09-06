@@ -50,7 +50,7 @@ class SecurityEventQueueTest {
         assertTrue(prefs.claimSecurityEvent(event.id))
 
         val recovered = prefs.recoverStaleSecurityEvents(
-            now = event.timestamp + 2 * 60 * 1000L + 1L
+            now = System.currentTimeMillis() + 2 * 60 * 1000L + 1L
         )
 
         assertEquals(1, recovered)
