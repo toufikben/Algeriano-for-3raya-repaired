@@ -8,4 +8,6 @@
     <string name="notification_alert_title">تنبيه أمان: تم رصد محاولة اختراق!</string>
     <string name="notification_alert_text">تمت معالجة محاولة فتح؛ راجع النتيجة والتفاصيل داخل التطبيق</string>
     <string name="notification_countdown_desc">تنبيهات مؤقت الحماية واقتراب انتهائه</string>
+    <string name="notification_boot_title">يلزم فتح التطبيق لاستئناف الحماية</string>
+    <string name="notification_boot_text">قيود Android تمنع تشغيل الكاميرا من الخلفية بعد إعادة التشغيل. افتح التطبيق لبدء الحماية ومعالجة الأحداث المعلقة.</string>
 </resources>

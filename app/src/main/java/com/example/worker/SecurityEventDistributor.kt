@@ -2,6 +2,7 @@ package com.example.worker
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.BackoffPolicy
@@ -88,6 +89,14 @@ class SecurityEventWorker(
         val prefs = SecurityPrefs.getInstance(applicationContext)
         val event = prefs.getPendingSecurityEvents().firstOrNull { it.id == eventId }
             ?: return Result.success()
+
+        // A camera foreground service must be started from a user-visible flow
+        // on Android 14+. Keep the durable event pending; the next visible app
+        // session will enqueue it again instead of converting this policy block
+        // into a failed security event or an endless retry loop.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return Result.success()
+        }
 
         return try {
             val intent = Intent(applicationContext, CameraForegroundService::class.java).apply {
