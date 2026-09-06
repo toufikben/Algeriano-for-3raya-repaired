@@ -83,6 +83,7 @@ class SecurityPrefs private constructor(private val context: Context) {
         private const val KEY_LOGS_JSON = "key_logs_json"
         private const val KEY_THRESHOLD = "key_failed_threshold"
         private const val KEY_FAILED_UNLOCK_ATTEMPTS = "key_failed_unlock_attempts"
+        private const val KEY_FAILURE_ALERT_SENT = "key_failure_alert_sent"
         private const val KEY_COUNTDOWN_ENABLED = "key_countdown_enabled"
         private const val KEY_COUNTDOWN_END_TIME = "key_countdown_end_time"
         private const val KEY_COUNTDOWN_DURATION = "key_countdown_duration"
@@ -238,6 +239,19 @@ class SecurityPrefs private constructor(private val context: Context) {
     var failedThreshold: Int
         get() = prefs.getInt(KEY_THRESHOLD, 3).coerceAtLeast(3)
         set(value) = prefs.edit().putInt(KEY_THRESHOLD, value.coerceAtLeast(3)).apply()
+
+    /** Returns true only for the first failed-unlock callback in a session. */
+    @Synchronized
+    fun beginFailureAlertSession(): Boolean {
+        if (prefs.getBoolean(KEY_FAILURE_ALERT_SENT, false)) return false
+        prefs.edit().putBoolean(KEY_FAILURE_ALERT_SENT, true).apply()
+        return true
+    }
+
+    @Synchronized
+    fun resetFailureAlertSession() {
+        prefs.edit().putBoolean(KEY_FAILURE_ALERT_SENT, false).apply()
+    }
 
     /**
      * Records one failed unlock attempt and returns the consecutive total

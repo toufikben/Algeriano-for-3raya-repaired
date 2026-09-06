@@ -19,31 +19,24 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
             return
         }
 
-        val failedAttempts = prefs.registerFailedUnlockAttempt()
-        val threshold = prefs.failedThreshold
-        Log.d(
-            "DeviceAdminReceiver",
-            "Password attempt failed: $failedAttempts/$threshold consecutive attempts"
-        )
+        if (!prefs.beginFailureAlertSession()) {
+            Log.d("DeviceAdminReceiver", "Failure ignored; alert already sent for this unlock session")
+            return
+        }
 
-        if (failedAttempts >= threshold) {
-            val event = prefs.enqueueSecurityEvent()
-            // Protection starts CameraForegroundService while the app is visible.
-            // Reuse that already-running FGS directly: Android 14+ blocks a
-            // background WorkManager worker from starting a new camera FGS.
-            val captureIntent = Intent(context, CameraForegroundService::class.java).apply {
-                action = CameraForegroundService.ACTION_CAPTURE_AND_SEND
-                putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, event.id)
-            }
-            try {
-                context.startService(captureIntent)
-                Log.d("DeviceAdminReceiver", "Capture dispatched to persistent foreground service")
-            } catch (e: Exception) {
-                Log.e("DeviceAdminReceiver", "Direct capture dispatch failed; queued for recovery", e)
-                SecurityEventDistributor.enqueue(context, event.id)
-            }
-        } else {
-            Log.d("DeviceAdminReceiver", "Capture deferred until the threshold is reached")
+        // Send on the first callback. The active foreground service is reused
+        // because Android 14+ blocks a background worker from starting camera FGS.
+        val event = prefs.enqueueSecurityEvent()
+        val captureIntent = Intent(context, CameraForegroundService::class.java).apply {
+            action = CameraForegroundService.ACTION_CAPTURE_AND_SEND
+            putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, event.id)
+        }
+        try {
+            context.startService(captureIntent)
+            Log.d("DeviceAdminReceiver", "First-failure capture dispatched to foreground service")
+        } catch (e: Exception) {
+            Log.e("DeviceAdminReceiver", "Direct capture dispatch failed; queued for recovery", e)
+            SecurityEventDistributor.enqueue(context, event.id)
         }
     }
 
@@ -51,6 +44,7 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         super.onPasswordSucceeded(context, intent)
         val prefs = SecurityPrefs.getInstance(context)
         prefs.resetFailedUnlockAttempts()
+        prefs.resetFailureAlertSession()
         com.example.receiver.CountdownScheduler.cancel(context)
         Log.d("DeviceAdminReceiver", "Password succeeded; consecutive failed attempts reset")
     }
@@ -67,6 +61,7 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         val prefs = SecurityPrefs.getInstance(context)
         prefs.isTrackingEnabled = false
         prefs.resetFailedUnlockAttempts()
+        prefs.resetFailureAlertSession()
         com.example.receiver.CountdownScheduler.cancel(context)
     }
 }

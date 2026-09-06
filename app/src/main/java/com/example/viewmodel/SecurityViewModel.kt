@@ -133,6 +133,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         prefs.isTrackingEnabled = enabled
         if (!enabled) {
             prefs.resetFailedUnlockAttempts()
+            prefs.resetFailureAlertSession()
             CountdownScheduler.cancel(context)
         }
         _uiState.update { it.copy(isTrackingEnabled = enabled) }
