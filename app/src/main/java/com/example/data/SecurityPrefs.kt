@@ -3,6 +3,7 @@ package com.example.data
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,7 +13,14 @@ import java.io.File
 import java.security.SecureRandom
 import java.security.spec.KeySpec
 import javax.crypto.SecretKeyFactory
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.GCMParameterSpec
+import java.nio.ByteBuffer
+import java.security.KeyStore
+import java.util.UUID
 
 data class IntruderLog(
     val id: String,
@@ -23,6 +31,25 @@ data class IntruderLog(
     val address: String?,
     val emailSent: Boolean,
     val statusMessage: String
+)
+
+enum class SecurityEventStatus {
+    PENDING, IN_PROGRESS, CAPTURED, SEND_PENDING, SENT,
+    FAILED, FAILED_RETRYABLE, FAILED_FINAL, CANCELLED
+}
+
+data class SecurityEvent(
+    val id: String,
+    val timestamp: Long,
+    val failedAttempt: Int,
+    val status: SecurityEventStatus,
+    val updatedAt: Long = timestamp,
+    val recoveryAttempts: Int = 0,
+    val sendAttempts: Int = 0,
+    val photoPath: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val locationTimestamp: Long? = null
 )
 
 class SecurityPrefs private constructor(private val context: Context) {
@@ -54,6 +81,15 @@ class SecurityPrefs private constructor(private val context: Context) {
         private const val KEY_COUNTDOWN_RETRY_COUNT = "key_countdown_retry_count"
         private const val KEY_APP_PIN_SALT = "key_app_pin_salt"
         private const val KEY_APP_PIN_HASH = "key_app_pin_hash"
+        private const val KEY_SECURITY_EVENTS_JSON = "key_security_events_json"
+        private const val KEYSTORE_ALIAS = "intruder_security_credentials"
+        private const val ENCRYPTED_PREFIX = "v1:"
+        private const val GCM_TAG_LENGTH_BITS = 128
+        private const val GCM_IV_LENGTH_BYTES = 12
+        private const val MAX_SECURITY_EVENTS = 100
+        private const val EVENT_LEASE_TIMEOUT_MILLIS = 2 * 60 * 1000L
+        private const val MAX_EVENT_RECOVERY_ATTEMPTS = 2
+        private const val MAX_SEND_ATTEMPTS = 3
         private const val PIN_ITERATIONS = 120_000
         private const val PIN_KEY_LENGTH = 256
         private const val DEFAULT_COUNTDOWN_DURATION_MILLIS = 60 * 60 * 1000L
@@ -69,12 +105,94 @@ class SecurityPrefs private constructor(private val context: Context) {
     }
 
     var email: String
-        get() = prefs.getString(KEY_EMAIL, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_EMAIL, value.trim()).apply()
+        get() = readSecret(KEY_EMAIL)
+        set(value) = writeSecret(KEY_EMAIL, value.trim())
 
     var password: String
-        get() = prefs.getString(KEY_PASSWORD, "") ?: ""
-        set(value) = prefs.edit().putString(KEY_PASSWORD, value.trim()).apply()
+        get() = readSecret(KEY_PASSWORD)
+        set(value) = writeSecret(KEY_PASSWORD, value.trim())
+
+    private fun readSecret(key: String): String {
+        val stored = prefs.getString(key, "") ?: return ""
+        if (stored.isBlank()) return ""
+        if (!stored.startsWith(ENCRYPTED_PREFIX)) {
+            // One-time migration for credentials saved by older app versions.
+            writeSecret(key, stored)
+            return stored
+        }
+
+        return try {
+            decrypt(stored.removePrefix(ENCRYPTED_PREFIX))
+        } catch (e: Exception) {
+            Log.e("SecurityPrefs", "Unable to decrypt stored credential", e)
+            ""
+        }
+    }
+
+    private fun writeSecret(key: String, value: String) {
+        if (value.isBlank()) {
+            prefs.edit().remove(key).apply()
+            return
+        }
+
+        try {
+            val encrypted = ENCRYPTED_PREFIX + encrypt(value)
+            prefs.edit().putString(key, encrypted).apply()
+        } catch (e: Exception) {
+            Log.e("SecurityPrefs", "Unable to encrypt credential; refusing to store it", e)
+        }
+    }
+
+    private fun getOrCreateCredentialKey(): SecretKey {
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        (keyStore.getKey(KEYSTORE_ALIAS, null) as? SecretKey)?.let { return it }
+
+        val generator = KeyGenerator.getInstance("AES", "AndroidKeyStore")
+        generator.init(
+            android.security.keystore.KeyGenParameterSpec.Builder(
+                KEYSTORE_ALIAS,
+                android.security.keystore.KeyProperties.PURPOSE_ENCRYPT or
+                    android.security.keystore.KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(android.security.keystore.KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setRandomizedEncryptionRequired(true)
+                .build()
+        )
+        return generator.generateKey()
+    }
+
+    private fun encrypt(value: String): String {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateCredentialKey())
+        val iv = cipher.iv
+        val ciphertext = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+        return Base64.encodeToString(
+            ByteBuffer.allocate(4 + iv.size + ciphertext.size)
+                .putInt(iv.size)
+                .put(iv)
+                .put(ciphertext)
+                .array(),
+            Base64.NO_WRAP
+        )
+    }
+
+    private fun decrypt(encoded: String): String {
+        val payload = ByteBuffer.wrap(Base64.decode(encoded, Base64.NO_WRAP))
+        val ivLength = payload.int
+        require(ivLength == GCM_IV_LENGTH_BYTES) { "Invalid credential IV" }
+        val iv = ByteArray(ivLength)
+        payload.get(iv)
+        val ciphertext = ByteArray(payload.remaining())
+        payload.get(ciphertext)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(
+            Cipher.DECRYPT_MODE,
+            getOrCreateCredentialKey(),
+            GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv)
+        )
+        return cipher.doFinal(ciphertext).toString(Charsets.UTF_8)
+    }
 
     var isTrackingEnabled: Boolean
         get() = prefs.getBoolean(KEY_TRACKING_ENABLED, false)
@@ -114,6 +232,234 @@ class SecurityPrefs private constructor(private val context: Context) {
     @Synchronized
     fun resetFailedUnlockAttempts() {
         prefs.edit().putInt(KEY_FAILED_UNLOCK_ATTEMPTS, 0).apply()
+        updateSecurityEvents { events ->
+            events.map { event ->
+                if (event.status == SecurityEventStatus.PENDING ||
+                    event.status == SecurityEventStatus.IN_PROGRESS ||
+                    event.status == SecurityEventStatus.SEND_PENDING ||
+                    event.status == SecurityEventStatus.FAILED_RETRYABLE
+                ) event.copy(status = SecurityEventStatus.CANCELLED) else event
+            }.takeLast(MAX_SECURITY_EVENTS)
+        }
+    }
+
+    @Synchronized
+    fun enqueueSecurityEvent(timestamp: Long = System.currentTimeMillis()): SecurityEvent {
+        val event = SecurityEvent(
+            id = UUID.randomUUID().toString(),
+            timestamp = timestamp,
+            failedAttempt = prefs.getInt(KEY_FAILED_UNLOCK_ATTEMPTS, 0),
+            status = SecurityEventStatus.PENDING,
+            updatedAt = timestamp
+        )
+        updateSecurityEvents { (it + event).takeLast(MAX_SECURITY_EVENTS) }
+        return event
+    }
+
+    @Synchronized
+    fun claimNextSecurityEvent(): SecurityEvent? {
+        val next = getSecurityEvents().firstOrNull { it.status == SecurityEventStatus.PENDING } ?: return null
+        updateSecurityEvents { events ->
+            events.map {
+                if (it.id == next.id) it.copy(
+                    status = SecurityEventStatus.IN_PROGRESS,
+                    updatedAt = System.currentTimeMillis()
+                ) else it
+            }
+        }
+        return next.copy(status = SecurityEventStatus.IN_PROGRESS, updatedAt = System.currentTimeMillis())
+    }
+
+    @Synchronized
+    fun claimSecurityEvent(id: String): Boolean {
+        val event = getSecurityEvents().firstOrNull { it.id == id } ?: return false
+        if (event.status != SecurityEventStatus.PENDING) return false
+        updateSecurityEvents { events ->
+            events.map {
+                if (it.id == id) it.copy(
+                    status = SecurityEventStatus.IN_PROGRESS,
+                    updatedAt = System.currentTimeMillis()
+                ) else it
+            }
+        }
+        return true
+    }
+
+    @Synchronized
+    fun completeSecurityEvent(id: String, status: SecurityEventStatus) {
+        updateSecurityEvents { events ->
+            events.map {
+                if (it.id == id && (it.status == SecurityEventStatus.IN_PROGRESS ||
+                        it.status == SecurityEventStatus.SEND_PENDING)) {
+                    it.copy(status = status, updatedAt = System.currentTimeMillis())
+                } else {
+                    it
+                }
+            }
+        }
+    }
+
+    @Synchronized
+    fun getSecurityEvent(id: String): SecurityEvent? = getSecurityEvents().firstOrNull { it.id == id }
+
+    @Synchronized
+    fun recordCaptureResult(
+        id: String,
+        photoPath: String?,
+        latitude: Double?,
+        longitude: Double?,
+        locationTimestamp: Long?
+    ) {
+        updateSecurityEvents { events ->
+            events.map {
+                if (it.id == id && it.status == SecurityEventStatus.IN_PROGRESS) {
+                    it.copy(
+                        status = SecurityEventStatus.SEND_PENDING,
+                        updatedAt = System.currentTimeMillis(),
+                        photoPath = photoPath,
+                        latitude = latitude,
+                        longitude = longitude,
+                        locationTimestamp = locationTimestamp
+                    )
+                } else it
+            }
+        }
+    }
+
+    @Synchronized
+    fun recordSendRetry(id: String): Boolean {
+        var retry = false
+        updateSecurityEvents { events ->
+            events.map {
+                if (it.id == id && it.status == SecurityEventStatus.SEND_PENDING) {
+                    val attempts = it.sendAttempts + 1
+                    retry = attempts < MAX_SEND_ATTEMPTS
+                    it.copy(
+                        status = if (retry) SecurityEventStatus.FAILED_RETRYABLE else SecurityEventStatus.FAILED_FINAL,
+                        sendAttempts = attempts,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                } else it
+            }
+        }
+        return retry
+    }
+
+    @Synchronized
+    fun markSendPendingForRetry(id: String): Boolean {
+        var changed = false
+        updateSecurityEvents { events ->
+            events.map {
+                if (it.id == id && it.status == SecurityEventStatus.FAILED_RETRYABLE) {
+                    changed = true
+                    it.copy(status = SecurityEventStatus.SEND_PENDING, updatedAt = System.currentTimeMillis())
+                } else it
+            }
+        }
+        return changed
+    }
+
+    @Synchronized
+    fun failPendingSecurityEvent(id: String) {
+        updateSecurityEvents { events ->
+            events.map {
+                if (it.id == id && it.status == SecurityEventStatus.PENDING) {
+                    it.copy(status = SecurityEventStatus.FAILED, updatedAt = System.currentTimeMillis())
+                } else it
+            }
+        }
+    }
+
+    fun hasPendingSecurityEvents(): Boolean = synchronized(this) {
+        getSecurityEvents().any {
+            it.status == SecurityEventStatus.PENDING ||
+                it.status == SecurityEventStatus.IN_PROGRESS ||
+                it.status == SecurityEventStatus.SEND_PENDING ||
+                it.status == SecurityEventStatus.FAILED_RETRYABLE
+        }
+    }
+
+    fun getPendingSecurityEvents(): List<SecurityEvent> = synchronized(this) {
+        getSecurityEvents().filter {
+            it.status == SecurityEventStatus.PENDING ||
+                it.status == SecurityEventStatus.SEND_PENDING ||
+                it.status == SecurityEventStatus.FAILED_RETRYABLE
+        }
+    }
+
+    /** Re-queues abandoned work after a process/device restart, with a bounded retry count. */
+    @Synchronized
+    fun recoverStaleSecurityEvents(now: Long = System.currentTimeMillis()): Int {
+        var recovered = 0
+        updateSecurityEvents { events ->
+            events.map { event ->
+                val stale = (event.status == SecurityEventStatus.IN_PROGRESS ||
+                    event.status == SecurityEventStatus.SEND_PENDING) &&
+                    now - event.updatedAt >= EVENT_LEASE_TIMEOUT_MILLIS
+                if (!stale) return@map event
+
+                if (event.recoveryAttempts < MAX_EVENT_RECOVERY_ATTEMPTS) {
+                    recovered += 1
+                    event.copy(
+                        status = if (event.photoPath != null) SecurityEventStatus.SEND_PENDING
+                            else SecurityEventStatus.PENDING,
+                        updatedAt = now,
+                        recoveryAttempts = event.recoveryAttempts + 1
+                    )
+                } else {
+                    event.copy(status = SecurityEventStatus.FAILED_FINAL, updatedAt = now)
+                }
+            }
+        }
+        return recovered
+    }
+
+    private fun getSecurityEvents(): List<SecurityEvent> {
+        val json = prefs.getString(KEY_SECURITY_EVENTS_JSON, "[]") ?: "[]"
+        return try {
+            val array = JSONArray(json)
+            (0 until array.length()).map { index ->
+                val item = array.getJSONObject(index)
+                SecurityEvent(
+                    id = item.getString("id"),
+                    timestamp = item.getLong("timestamp"),
+                    failedAttempt = item.getInt("failedAttempt"),
+                    status = runCatching {
+                        SecurityEventStatus.valueOf(item.getString("status"))
+                    }.getOrDefault(SecurityEventStatus.FAILED),
+                    updatedAt = item.optLong("updatedAt", item.optLong("timestamp")),
+                    recoveryAttempts = item.optInt("recoveryAttempts", 0).coerceAtLeast(0),
+                    sendAttempts = item.optInt("sendAttempts", 0).coerceAtLeast(0),
+                    photoPath = if (item.has("photoPath")) item.getString("photoPath") else null,
+                    latitude = if (item.has("latitude")) item.optDouble("latitude") else null,
+                    longitude = if (item.has("longitude")) item.optDouble("longitude") else null,
+                    locationTimestamp = if (item.has("locationTimestamp")) item.optLong("locationTimestamp") else null
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("SecurityPrefs", "Unable to read security events", e)
+            emptyList()
+        }
+    }
+
+    private fun updateSecurityEvents(transform: (List<SecurityEvent>) -> List<SecurityEvent>) {
+        val array = JSONArray()
+        transform(getSecurityEvents()).takeLast(MAX_SECURITY_EVENTS).forEach { event ->
+            array.put(JSONObject().apply {
+                put("id", event.id)
+                put("timestamp", event.timestamp)
+                put("failedAttempt", event.failedAttempt)
+                put("status", event.status.name)
+                put("updatedAt", event.updatedAt)
+                put("recoveryAttempts", event.recoveryAttempts)
+                put("sendAttempts", event.sendAttempts)
+                event.photoPath?.let { put("photoPath", it) }
+                event.latitude?.let { put("latitude", it) }
+                event.longitude?.let { put("longitude", it) }
+                event.locationTimestamp?.let { put("locationTimestamp", it) }
+            })
+        }
+        prefs.edit().putString(KEY_SECURITY_EVENTS_JSON, array.toString()).apply()
     }
 
     val hasAppPin: Boolean
@@ -186,6 +532,7 @@ class SecurityPrefs private constructor(private val context: Context) {
             .apply()
     }
 
+    @Synchronized
     fun addLog(log: IntruderLog) {
         val currentLogs = getLogs().toMutableList()
         currentLogs.add(0, log)
@@ -221,7 +568,7 @@ class SecurityPrefs private constructor(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SecurityPrefs", "Unable to read intruder logs", e)
         }
         return list
     }
@@ -244,7 +591,7 @@ class SecurityPrefs private constructor(private val context: Context) {
             }
             prefs.edit().putString(KEY_LOGS_JSON, jsonArray.toString()).apply()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SecurityPrefs", "Unable to persist intruder logs", e)
         }
     }
 

@@ -181,7 +181,7 @@ fun ProtectionToggleCard(
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = if (isTrackingEnabled) "الحماية نشطة في الخلفية" else "اضغط لتشغيل الحماية",
+                text = if (isTrackingEnabled) "الحماية نشطة وإشعارها ظاهر" else "اضغط لتشغيل الحماية",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -190,9 +190,9 @@ fun ProtectionToggleCard(
 
             Text(
                 text = if (isTrackingEnabled)
-                    "يراقب التطبيق محاولات إدخال الرمز الخاطئ، وسيلتقط صورة المتسلل ويحدد موقعه ويرسلهما لبريدك تلقائياً."
+                    "يرصد التطبيق محاولات فتح القفل الخاطئة. بعد بلوغ الحد المحدد سيحاول إنشاء تنبيه؛ وقد يمنع Android استخدام الكاميرا من الخلفية."
                 else
-                    "قم بتفعيل التتبع للبدء في مراقبة المتسللين والتقاط صور محاولات الفتح الفاشلة وإرسالها لبريدك.",
+                    "فعّل الحماية بإرادتك. سيظهر إشعار دائم أثناء التفعيل، وقد يتطلب التقاط الصورة فتح التطبيق بسبب قيود Android.",
                 fontSize = 13.sp,
                 color = Color(0xFFCBD5E1),
                 textAlign = TextAlign.Center,
@@ -228,7 +228,7 @@ fun ProtectionToggleCard(
                             fontSize = 14.sp
                         )
                         Text(
-                            text = if (isTrackingEnabled) "مفعل (يعمل بعد إعادة التشغيل)" else "معطل حالياً",
+                            text = if (isTrackingEnabled) "مفعل والإشعار ظاهر" else "معطل حالياً",
                             color = Color(0xFF94A3B8),
                             fontSize = 11.sp
                         )

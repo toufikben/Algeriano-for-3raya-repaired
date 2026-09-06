@@ -61,6 +61,7 @@ fun CountdownCard(
     remainingMillis: Long,
     selectedDurationMillis: Long,
     onStart: (Long) -> Unit,
+    onReset: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -108,6 +109,17 @@ fun CountdownCard(
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onReset,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = CyanAccent, contentColor = Color.Black)
+                ) {
+                    Icon(Icons.Filled.Refresh, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("إعادة ضبط بنفس المدة")
+                }
+                Spacer(Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = { showStopConfirmation = true },
                     modifier = Modifier.fillMaxWidth(),

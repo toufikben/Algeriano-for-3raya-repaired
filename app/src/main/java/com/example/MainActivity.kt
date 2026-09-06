@@ -356,6 +356,7 @@ fun SecurityMainScreen(
                     remainingMillis = uiState.countdownRemainingMillis,
                     selectedDurationMillis = uiState.countdownDurationMillis,
                     onStart = viewModel::startCountdown,
+                    onReset = viewModel::resetCountdown,
                     onCancel = viewModel::cancelCountdown
                 )
             }

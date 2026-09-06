@@ -34,11 +34,14 @@ import com.example.R
 import com.example.SecurityApp
 import com.example.data.IntruderLog
 import com.example.data.SecurityPrefs
+import com.example.data.SecurityEventStatus
 import com.example.receiver.CountdownScheduler
 import com.example.util.EmailSender
+import com.example.worker.SecurityEventDistributor
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.android.gms.location.CancellationTokenSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -61,6 +64,7 @@ class CameraForegroundService : Service() {
         const val ACTION_START_MONITORING = "com.example.action.START_MONITORING"
         const val ACTION_TEST_CAPTURE = "com.example.action.TEST_CAPTURE"
         const val ACTION_STOP_MONITORING = "com.example.action.STOP_MONITORING"
+        const val EXTRA_SECURITY_EVENT_ID = "extra_security_event_id"
         private const val NOTIFICATION_ID = 1001
         private const val ALERT_NOTIFICATION_ID = 2002
         private const val TAG = "CameraService"
@@ -76,6 +80,7 @@ class CameraForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        SecurityPrefs.getInstance(applicationContext).recoverStaleSecurityEvents()
         startBackgroundThread()
     }
 
@@ -84,6 +89,7 @@ class CameraForegroundService : Service() {
         Log.d(TAG, "onStartCommand action: $action")
 
         if (action == ACTION_STOP_MONITORING) {
+            NotificationManagerCompat.from(this).cancel(ALERT_NOTIFICATION_ID)
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
             foregroundStarted = false
             stopSelf()
@@ -101,7 +107,8 @@ class CameraForegroundService : Service() {
         when (action) {
             ACTION_CAPTURE_AND_SEND, ACTION_COUNTDOWN_EXPIRED, ACTION_TEST_CAPTURE -> {
                 val isTest = action == ACTION_TEST_CAPTURE
-                processIntruderCapture(isTest, action == ACTION_COUNTDOWN_EXPIRED)
+                val eventId = intent?.getStringExtra(EXTRA_SECURITY_EVENT_ID)
+                processIntruderCapture(isTest, action == ACTION_COUNTDOWN_EXPIRED, eventId)
             }
             ACTION_START_MONITORING -> Unit
         }
@@ -173,8 +180,8 @@ class CameraForegroundService : Service() {
         )
 
         return NotificationCompat.Builder(this, SecurityApp.CHANNEL_ID_SERVICE)
-            .setContentTitle("حماية الهاتف نشطة")
-            .setContentText("جاري مراقبة محاولات فتح القفل غير المصرح بها")
+            .setContentTitle(getString(R.string.notification_title))
+            .setContentText(getString(R.string.notification_text))
             .setSmallIcon(R.drawable.ic_launcher_foreground_img_1787338860864)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -182,11 +189,32 @@ class CameraForegroundService : Service() {
             .build()
     }
 
-    private fun processIntruderCapture(isTest: Boolean, isCountdownCapture: Boolean = false) {
+    private fun processIntruderCapture(
+        isTest: Boolean,
+        isCountdownCapture: Boolean = false,
+        eventId: String? = null
+    ) {
+        val prefs = SecurityPrefs.getInstance(applicationContext)
+        val existingEvent = eventId?.let { prefs.getSecurityEvent(it) }
+        val sendOnly = !isTest && existingEvent?.status in setOf(
+            SecurityEventStatus.SEND_PENDING,
+            SecurityEventStatus.FAILED_RETRYABLE
+        ) && !existingEvent?.photoPath.isNullOrBlank()
+        if (!isTest && eventId != null && !sendOnly && !prefs.claimSecurityEvent(eventId)) {
+            Log.w(TAG, "Ignoring duplicate or already-processed security event: $eventId")
+            return
+        }
         if (!captureInProgress.compareAndSet(false, true)) {
             Log.w(TAG, "Capture already in progress; ignoring duplicate request")
+            if (!isTest && eventId != null) prefs.completeSecurityEvent(eventId, SecurityEventStatus.PENDING)
             if (isCountdownCapture) {
                 CountdownScheduler.schedulePendingRetry(applicationContext)
+            }
+            if (!isTest && eventId != null) {
+                serviceScope.launch {
+                    while (captureInProgress.get()) kotlinx.coroutines.delay(250L)
+                    processIntruderCapture(isTest = false, isCountdownCapture = false, eventId = eventId)
+                }
             }
             return
         }
@@ -194,14 +222,18 @@ class CameraForegroundService : Service() {
         val wakeLock = acquireWakeLock()
 
         serviceScope.launch {
+            var logSaved = false
             try {
-                val prefs = SecurityPrefs.getInstance(applicationContext)
                 val timestamp = System.currentTimeMillis()
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 val timeStr = dateFormat.format(Date(timestamp))
 
-                // 1. Capture Image
-                val capturedFile = captureImageSilently()
+                // 1. Capture once; retries reuse the saved file.
+                val capturedFile = if (sendOnly) {
+                    existingEvent?.photoPath?.let(::File)?.takeIf { it.exists() }
+                } else {
+                    captureImageSilently()
+                }
                 val cameraPermissionGranted = ActivityCompat.checkSelfPermission(
                     this@CameraForegroundService,
                     Manifest.permission.CAMERA
@@ -214,8 +246,16 @@ class CameraForegroundService : Service() {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
 
-                // 2. Fetch Location
-                val location = fetchCurrentLocation()
+                // 2. Fetch once; retries reuse the saved coordinates.
+                val location = if (sendOnly && existingEvent?.latitude != null && existingEvent.longitude != null) {
+                    Location("saved-event").apply {
+                        latitude = existingEvent.latitude
+                        longitude = existingEvent.longitude
+                        time = existingEvent.locationTimestamp ?: existingEvent.timestamp
+                    }
+                } else {
+                    fetchCurrentLocation()
+                }
                 val lat = location?.latitude
                 val lng = location?.longitude
                 val locationText = if (lat != null && lng != null) {
@@ -224,10 +264,21 @@ class CameraForegroundService : Service() {
                     "الموقع غير متاح (تعذر تحديد إحداثيات GPS أو تم تعطيل الصلاحية)"
                 }
 
+                if (!isTest && eventId != null && !sendOnly) {
+                    prefs.recordCaptureResult(
+                        id = eventId,
+                        photoPath = capturedFile?.absolutePath,
+                        latitude = lat,
+                        longitude = lng,
+                        locationTimestamp = location?.time
+                    )
+                }
+
                 // 3. Send Email if credentials available
                 val userEmail = prefs.email
                 val userPassword = prefs.password
                 var emailSuccess = false
+                var emailRetryable = false
                 var statusMsg = when {
                     !cameraPermissionGranted -> "تعذر التقاط الصورة: إذن الكاميرا غير ممنوح"
                     capturedFile == null -> "تعذر التقاط الصورة من الكاميرا"
@@ -263,10 +314,12 @@ class CameraForegroundService : Service() {
                         recipientEmail = userEmail,
                         subject = subject,
                         bodyText = body,
-                        imageFile = capturedFile
+                        imageFile = capturedFile,
+                        eventId = eventId
                     )
 
                     emailSuccess = sendResult.isSuccess
+                    emailRetryable = sendResult.retryable
                     val emailStatus = if (emailSuccess) {
                         "تم إرسال بريد التنبيه بنجاح مع الصورة والموقع"
                     } else {
@@ -283,6 +336,22 @@ class CameraForegroundService : Service() {
                     }
                 }
 
+                if (!isTest && eventId != null) {
+                    if (emailSuccess) {
+                        prefs.completeSecurityEvent(eventId, SecurityEventStatus.SENT)
+                    } else if (emailRetryable &&
+                        userEmail.isNotBlank() && userPassword.isNotBlank() &&
+                        prefs.recordSendRetry(eventId)
+                    ) {
+                        prefs.markSendPendingForRetry(eventId)
+                        SecurityEventDistributor.enqueue(applicationContext, eventId)
+                        statusMsg = "$statusMsg؛ فشل مؤقت: تمت جدولة إعادة إرسال البريد دون إعادة التقاط الصورة"
+                    } else {
+                        prefs.completeSecurityEvent(eventId, SecurityEventStatus.FAILED_FINAL)
+                        statusMsg = "$statusMsg؛ فشل نهائي: لن تتم إعادة المحاولة تلقائياً"
+                    }
+                }
+
                 // 4. Save Log
                 val log = IntruderLog(
                     id = UUID.randomUUID().toString(),
@@ -295,16 +364,42 @@ class CameraForegroundService : Service() {
                     statusMessage = statusMsg
                 )
                 prefs.addLog(log)
+                logSaved = true
 
                 // 5. Show alert notification
-                showAlertNotification(isTest, timeStr, emailSuccess)
+                showAlertNotification(
+                    isTest = isTest,
+                    timeStr = timeStr,
+                    emailSent = emailSuccess,
+                    photoCaptured = capturedFile != null,
+                    locationAvailable = location != null
+                )
 
                 if (isCountdownCapture) {
                     prefs.clearCountdown()
                 }
-
             } catch (e: Exception) {
                 Log.e(TAG, "Error in processIntruderCapture", e)
+                if (!isTest && eventId != null) {
+                    prefs.completeSecurityEvent(eventId, SecurityEventStatus.FAILED_FINAL)
+                    if (!logSaved) {
+                        val failedEvent = prefs.getSecurityEvent(eventId)
+                        prefs.addLog(
+                            IntruderLog(
+                                id = UUID.randomUUID().toString(),
+                                timestamp = failedEvent?.timestamp ?: System.currentTimeMillis(),
+                                photoPath = failedEvent?.photoPath,
+                                latitude = failedEvent?.latitude,
+                                longitude = failedEvent?.longitude,
+                                address = if (failedEvent?.latitude != null && failedEvent.longitude != null) {
+                                    "${failedEvent.latitude}, ${failedEvent.longitude}"
+                                } else null,
+                                emailSent = false,
+                                statusMessage = "FAILED_FINAL: فشل غير متوقع أثناء معالجة الحدث: ${e.javaClass.simpleName}"
+                            )
+                        )
+                    }
+                }
                 if (isCountdownCapture) {
                     CountdownScheduler.schedulePendingRetry(applicationContext)
                 }
@@ -361,13 +456,13 @@ class CameraForegroundService : Service() {
         imageReader = reader
 
         reader.setOnImageAvailableListener({ ir ->
+            var image: android.media.Image? = null
             try {
-                val image = ir.acquireLatestImage()
+                image = ir.acquireLatestImage()
                 if (image != null) {
                     val buffer = image.planes[0].buffer
                     val bytes = ByteArray(buffer.remaining())
                     buffer.get(bytes)
-                    image.close()
 
                     val picturesDir = File(getExternalFilesDir(null), "intruder_photos")
                     if (!picturesDir.exists()) picturesDir.mkdirs()
@@ -389,6 +484,7 @@ class CameraForegroundService : Service() {
                     captureCompleted.complete(null)
                 }
             } finally {
+                image?.close()
                 closeCamera()
             }
         }, backgroundHandler)
@@ -488,9 +584,10 @@ class CameraForegroundService : Service() {
 
         val fusedClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this@CameraForegroundService)
         val locationDeferred = kotlinx.coroutines.CompletableDeferred<Location?>()
+        val cancellationSource = CancellationTokenSource()
 
         try {
-            fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
+            fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellationSource.token)
                 .addOnSuccessListener { loc ->
                     if (loc != null) {
                         locationDeferred.complete(loc)
@@ -521,10 +618,18 @@ class CameraForegroundService : Service() {
             }
         } catch (e: Exception) {
             null
+        } finally {
+            cancellationSource.cancel()
         }
     }
 
-    private fun showAlertNotification(isTest: Boolean, timeStr: String, emailSent: Boolean) {
+    private fun showAlertNotification(
+        isTest: Boolean,
+        timeStr: String,
+        emailSent: Boolean,
+        photoCaptured: Boolean,
+        locationAvailable: Boolean
+    ) {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -536,11 +641,21 @@ class CameraForegroundService : Service() {
         )
 
         val title = if (isTest) "اختبار كاشف المتسللين" else "🚨 تنبيه أمان: محاولة فتح خاطئة!"
-        val text = if (emailSent) {
-            "تم التقاط الصورة وإرسال التنبيه إلى بريدك ($timeStr)"
-        } else {
-            "تم التقاط الصورة وتسجيل المحاولة في $timeStr"
+        val resultText = when {
+            emailSent && photoCaptured && locationAvailable ->
+                "تم التقاط الصورة وتحديد الموقع وإرسال التنبيه إلى بريدك"
+            emailSent && photoCaptured ->
+                "تم التقاط الصورة وإرسال التنبيه؛ الموقع غير متاح"
+            emailSent ->
+                "تم إرسال التنبيه؛ تعذر التقاط الصورة أو تحديد الموقع"
+            photoCaptured && locationAvailable ->
+                "تم التقاط الصورة وتحديد الموقع، لكن تعذر إرسال البريد"
+            photoCaptured ->
+                "تم التقاط الصورة، لكن الموقع أو إرسال البريد غير متاح"
+            else ->
+                "تم تسجيل المحاولة، لكن التقاط الصورة لم ينجح"
         }
+        val text = "$resultText ($timeStr)"
 
         val notification = NotificationCompat.Builder(this, SecurityApp.CHANNEL_ID_ALERTS)
             .setContentTitle(title)

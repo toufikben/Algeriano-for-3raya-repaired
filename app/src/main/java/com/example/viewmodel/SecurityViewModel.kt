@@ -16,6 +16,7 @@ import com.example.data.SecurityPrefs
 import com.example.receiver.CountdownScheduler
 import com.example.receiver.MyDeviceAdminReceiver
 import com.example.service.CameraForegroundService
+import com.example.worker.SecurityEventDistributor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,7 +62,14 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
     val uiState: StateFlow<SecurityUiState> = _uiState.asStateFlow()
 
     init {
+        val recoveredEvents = prefs.recoverStaleSecurityEvents()
         CountdownScheduler.rescheduleFromPrefs(context)
+        if (recoveredEvents > 0) {
+            _uiState.update {
+                it.copy(bannerMessage = "تمت استعادة $recoveredEvents منبهات معلقة؛ راجع سجل المحاولات")
+            }
+        }
+        SecurityEventDistributor.enqueuePending(context)
         viewModelScope.launch {
             prefs.trackingEnabledFlow.collect { enabled ->
                 _uiState.update { it.copy(isTrackingEnabled = enabled) }
@@ -139,7 +147,9 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
                     context.startService(serviceIntent)
                 }
             } else {
-                context.stopService(serviceIntent)
+                // Deliver the explicit stop action so the service can remove
+                // its foreground and alert notifications before stopping.
+                context.startService(serviceIntent)
             }
         } catch (e: Exception) {
             val message = when {
@@ -205,6 +215,23 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         CountdownScheduler.cancel(context)
         _uiState.update {
             it.copy(countdownEnabled = false, countdownEndTime = 0L, countdownRemainingMillis = 0L)
+        }
+    }
+
+    fun resetCountdown() {
+        if (!_uiState.value.isTrackingEnabled) {
+            _uiState.update { it.copy(bannerMessage = "يرجى تشغيل الحماية أولاً لإعادة تشغيل المؤقت") }
+            return
+        }
+        CountdownScheduler.start(context, prefs.countdownDurationMillis)
+        _uiState.update {
+            it.copy(
+                countdownEnabled = true,
+                countdownEndTime = prefs.countdownEndTime,
+                countdownDurationMillis = prefs.countdownDurationMillis,
+                countdownRemainingMillis = remainingCountdownMillis(),
+                bannerMessage = "تمت إعادة ضبط المؤقت بنفس المدة"
+            )
         }
     }
 

@@ -1,14 +1,12 @@
 package com.example.receiver
 
 import android.app.admin.DeviceAdminReceiver
-import android.app.ForegroundServiceStartNotAllowedException
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import com.example.data.SecurityPrefs
 import com.example.receiver.CountdownScheduler
-import com.example.service.CameraForegroundService
+import com.example.worker.SecurityEventDistributor
 
 class MyDeviceAdminReceiver : DeviceAdminReceiver() {
 
@@ -29,28 +27,8 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         )
 
         if (failedAttempts >= threshold) {
-            val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
-                action = CameraForegroundService.ACTION_CAPTURE_AND_SEND
-            }
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent)
-                } else {
-                    context.startService(serviceIntent)
-                }
-            } catch (e: Exception) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                    e is ForegroundServiceStartNotAllowedException
-                ) {
-                    Log.e(
-                        "DeviceAdminReceiver",
-                        "System rejected foreground service start while app is in background",
-                        e
-                    )
-                } else {
-                    Log.e("DeviceAdminReceiver", "Failed to start foreground service", e)
-                }
-            }
+            val event = prefs.enqueueSecurityEvent()
+            SecurityEventDistributor.enqueue(context, event.id)
         } else {
             Log.d("DeviceAdminReceiver", "Capture deferred until the threshold is reached")
         }

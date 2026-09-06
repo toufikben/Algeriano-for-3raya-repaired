@@ -2,10 +2,10 @@
     <string name="app_name">Algeriano for 3raya</string>
     <string name="device_admin_description">صلاحية مدير الجهاز ضرورية لرصد محاولات إدخال كلمة المرور أو النمط الخاطئ والتقاط صورة للمتسلل.</string>
     <string name="notification_channel_name">خدمة الحماية والأمان</string>
-    <string name="notification_channel_desc">إشعارات تشغيل خدمة رصد المتسللين وتنبيهات الأمان</string>
+    <string name="notification_channel_desc">إشعار ظاهر عند تفعيل الحماية وتنبيهات نتائج المحاولات</string>
     <string name="notification_title">حماية الهاتف نشطة</string>
-    <string name="notification_text">جاري مراقبة محاولات فتح القفل غير المصرح بها</string>
+    <string name="notification_text">الحماية مفعّلة؛ سيظهر إشعار أثناء تشغيل الخدمة</string>
     <string name="notification_alert_title">تنبيه أمان: تم رصد محاولة اختراق!</string>
-    <string name="notification_alert_text">تم التقاط صورة المتسلل وجاري إرسال البريد الإلكتروني</string>
+    <string name="notification_alert_text">تمت معالجة محاولة فتح؛ راجع النتيجة والتفاصيل داخل التطبيق</string>
     <string name="notification_countdown_desc">تنبيهات مؤقت الحماية واقتراب انتهائه</string>
 </resources>

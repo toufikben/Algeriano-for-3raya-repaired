@@ -376,19 +376,31 @@ private fun IntruderLogItem(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
+                val isFinalFailure = log.statusMessage.contains("FAILED_FINAL") ||
+                    log.statusMessage.contains("فشل نهائي")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(6.dp)
                             .clip(CircleShape)
-                            .background(if (log.emailSent) EmeraldActive else CyanAccent)
+                            .background(
+                                when {
+                                    log.emailSent -> EmeraldActive
+                                    isFinalFailure -> Color(0xFFEF4444)
+                                    else -> CyanAccent
+                                }
+                            )
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (log.emailSent) "تم إرسال بريد التنبيه" else log.statusMessage,
                         fontSize = 11.sp,
-                        color = if (log.emailSent) EmeraldActive else Color(0xFF94A3B8),
-                        maxLines = 1
+                        color = when {
+                            log.emailSent -> EmeraldActive
+                            isFinalFailure -> Color(0xFFFCA5A5)
+                            else -> Color(0xFF94A3B8)
+                        },
+                        maxLines = 2
                     )
                 }
 

@@ -5,11 +5,11 @@ import java.util.Properties
 import javax.activation.DataHandler
 import javax.activation.FileDataSource
 import javax.mail.Authenticator
+import javax.mail.AuthenticationFailedException
 import javax.mail.Message
 import javax.mail.Multipart
 import javax.mail.PasswordAuthentication
 import javax.mail.Session
-import javax.mail.Transport
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeBodyPart
 import javax.mail.internet.MimeMessage
@@ -17,7 +17,11 @@ import javax.mail.internet.MimeMultipart
 
 object EmailSender {
 
-    data class SendResult(val isSuccess: Boolean, val errorMessage: String? = null)
+    data class SendResult(
+        val isSuccess: Boolean,
+        val errorMessage: String? = null,
+        val retryable: Boolean = true
+    )
 
     fun sendSecurityAlert(
         senderEmail: String,
@@ -25,7 +29,8 @@ object EmailSender {
         recipientEmail: String,
         subject: String,
         bodyText: String,
-        imageFile: File? = null
+        imageFile: File? = null,
+        eventId: String? = null
     ): SendResult {
         if (senderEmail.isBlank() || appPassword.isBlank()) {
             return SendResult(false, "البريد الإلكتروني أو كلمة مرور التطبيق فارغة")
@@ -54,6 +59,10 @@ object EmailSender {
                 setFrom(InternetAddress(senderEmail.trim(), "نظام حماية الهاتف"))
                 setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail.trim()))
                 setSubject(subject, "UTF-8")
+                eventId?.let {
+                    setHeader("X-Security-Event-Id", it)
+                    setHeader("Message-ID", "<$it@algeriano-security.local>")
+                }
 
                 val multipart: Multipart = MimeMultipart()
 
@@ -74,10 +83,23 @@ object EmailSender {
                 setContent(multipart)
             }
 
-            Transport.send(message)
-            SendResult(true)
+            val transport = session.getTransport("smtp")
+            try {
+                transport.connect(senderEmail.trim(), cleanPassword)
+                transport.sendMessage(message, message.allRecipients)
+                SendResult(true)
+            } finally {
+                try {
+                    if (transport.isConnected) transport.close()
+                } catch (_: Exception) {
+                    // The send result should not be replaced by a close failure.
+                }
+            }
+        } catch (e: AuthenticationFailedException) {
+            System.err.println("EmailSender: SMTP authentication failed")
+            SendResult(false, "فشل التحقق من بيانات SMTP؛ راجع البريد وكلمة مرور التطبيق", retryable = false)
         } catch (e: Exception) {
-            e.printStackTrace()
+            System.err.println("EmailSender: SMTP send failed: ${e.javaClass.simpleName}")
             SendResult(false, e.localizedMessage ?: e.message ?: "فشل في إرسال البريد عبر الخادم")
         }
     }
