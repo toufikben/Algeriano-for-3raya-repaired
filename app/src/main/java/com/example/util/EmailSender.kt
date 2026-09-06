@@ -100,7 +100,7 @@ object EmailSender {
             SendResult(false, "فشل التحقق من بيانات SMTP؛ راجع البريد وكلمة مرور التطبيق", retryable = false)
         } catch (e: Exception) {
             System.err.println("EmailSender: SMTP send failed: ${e.javaClass.simpleName}")
-            SendResult(false, e.localizedMessage ?: e.message ?: "فشل في إرسال البريد عبر الخادم")
+            SendResult(false, "تعذر الاتصال بخادم البريد؛ ستتم إعادة المحاولة إذا كان الخطأ مؤقتًا")
         }
     }
 }
