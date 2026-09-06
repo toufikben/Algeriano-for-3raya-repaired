@@ -112,7 +112,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: apk-release-${{ github.run_number }}
-          path: app/build/outputs/apk/release/app-release.apk
+          path: ${{ steps.signing.outputs.available == 'true' && 'app/build/outputs/apk/release/app-release.apk' || 'app/build/outputs/apk/release/app-release-unsigned.apk' }}
           if-no-files-found: error
           retention-days: 30
 
