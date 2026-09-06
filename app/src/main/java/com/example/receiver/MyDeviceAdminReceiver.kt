@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.example.data.SecurityPrefs
-import com.example.receiver.CountdownScheduler
+import com.example.service.CameraForegroundService
 import com.example.worker.SecurityEventDistributor
 
 class MyDeviceAdminReceiver : DeviceAdminReceiver() {
@@ -28,7 +28,20 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
 
         if (failedAttempts >= threshold) {
             val event = prefs.enqueueSecurityEvent()
-            SecurityEventDistributor.enqueue(context, event.id)
+            // Protection starts CameraForegroundService while the app is visible.
+            // Reuse that already-running FGS directly: Android 14+ blocks a
+            // background WorkManager worker from starting a new camera FGS.
+            val captureIntent = Intent(context, CameraForegroundService::class.java).apply {
+                action = CameraForegroundService.ACTION_CAPTURE_AND_SEND
+                putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, event.id)
+            }
+            try {
+                context.startService(captureIntent)
+                Log.d("DeviceAdminReceiver", "Capture dispatched to persistent foreground service")
+            } catch (e: Exception) {
+                Log.e("DeviceAdminReceiver", "Direct capture dispatch failed; queued for recovery", e)
+                SecurityEventDistributor.enqueue(context, event.id)
+            }
         } else {
             Log.d("DeviceAdminReceiver", "Capture deferred until the threshold is reached")
         }
@@ -38,7 +51,7 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         super.onPasswordSucceeded(context, intent)
         val prefs = SecurityPrefs.getInstance(context)
         prefs.resetFailedUnlockAttempts()
-        CountdownScheduler.cancel(context)
+        com.example.receiver.CountdownScheduler.cancel(context)
         Log.d("DeviceAdminReceiver", "Password succeeded; consecutive failed attempts reset")
     }
 
@@ -54,6 +67,6 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         val prefs = SecurityPrefs.getInstance(context)
         prefs.isTrackingEnabled = false
         prefs.resetFailedUnlockAttempts()
-        CountdownScheduler.cancel(context)
+        com.example.receiver.CountdownScheduler.cancel(context)
     }
 }
