@@ -33,14 +33,14 @@ class SecurityEventDistributorTest {
         context = ApplicationProvider.getApplicationContext()
         WorkManagerTestInitHelper.initializeTestWorkManager(context)
         workManager = WorkManager.getInstance(context)
-        workManager.cancelAllWork().get()
+        workManager.cancelAllWork().result.get()
         prefs = SecurityPrefs.getInstance(context)
         prefs.resetFailedUnlockAttempts()
     }
 
     @After
     fun tearDown() {
-        workManager.cancelAllWork().get()
+        workManager.cancelAllWork().result.get()
     }
 
     @Test
