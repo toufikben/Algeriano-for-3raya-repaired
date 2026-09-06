@@ -19,13 +19,9 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
             return
         }
 
-        if (!prefs.beginFailureAlertSession()) {
-            Log.d("DeviceAdminReceiver", "Failure ignored; alert already sent for this unlock session")
-            return
-        }
-
-        // Send on the first callback. The active foreground service is reused
-        // because Android 14+ blocks a background worker from starting camera FGS.
+        // Every callback becomes an independent event. The active foreground
+        // service serializes concurrent captures and the durable queue handles
+        // events that cannot be processed immediately.
         val event = prefs.enqueueSecurityEvent()
         val captureIntent = Intent(context, CameraForegroundService::class.java).apply {
             action = CameraForegroundService.ACTION_CAPTURE_AND_SEND
@@ -33,7 +29,7 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         }
         try {
             context.startService(captureIntent)
-            Log.d("DeviceAdminReceiver", "First-failure capture dispatched to foreground service")
+            Log.d("DeviceAdminReceiver", "Failed-unlock capture dispatched for event ${event.id}")
         } catch (e: Exception) {
             Log.e("DeviceAdminReceiver", "Direct capture dispatch failed; queued for recovery", e)
             SecurityEventDistributor.enqueue(context, event.id)
@@ -47,7 +43,6 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         // created for the preceding failed attempt; capture/email may still
         // be processing asynchronously.
         prefs.resetFailedUnlockAttempts(cancelPendingEvents = false)
-        prefs.resetFailureAlertSession()
         com.example.receiver.CountdownScheduler.cancel(context)
         Log.d("DeviceAdminReceiver", "Password succeeded; consecutive failed attempts reset")
     }
@@ -64,7 +59,6 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         val prefs = SecurityPrefs.getInstance(context)
         prefs.isTrackingEnabled = false
         prefs.resetFailedUnlockAttempts()
-        prefs.resetFailureAlertSession()
         com.example.receiver.CountdownScheduler.cancel(context)
     }
 }
