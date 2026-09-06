@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
+import androidx.work.BackoffPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -26,14 +27,26 @@ object SecurityEventDistributor {
     private const val RECOVERY_WORK_NAME = "security-events-recovery"
     private const val RECOVERY_DELAY_MINUTES = 2L
     private const val MAX_WORK_ATTEMPTS = 3
+    private const val RETRY_DELAY_MINUTES = 1L
 
     fun enqueue(context: Context, eventId: String) {
         val prefs = SecurityPrefs.getInstance(context)
         if (prefs.getPendingSecurityEvents().none { it.id == eventId }) return
 
+        val event = prefs.getPendingSecurityEvents().first { it.id == eventId }
+        val retryDelayMinutes = if (event.sendAttempts == 0) {
+            0L
+        } else {
+            RETRY_DELAY_MINUTES shl (event.sendAttempts - 1).coerceIn(0, 2)
+        }
         val request = OneTimeWorkRequestBuilder<SecurityEventWorker>()
             .setInputData(workDataOf(EVENT_ID_KEY to eventId))
-            .setInitialDelay(0L, TimeUnit.MILLISECONDS)
+            .setInitialDelay(retryDelayMinutes, TimeUnit.MINUTES)
+            .setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                RETRY_DELAY_MINUTES,
+                TimeUnit.MINUTES
+            )
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
             WORK_PREFIX + eventId,

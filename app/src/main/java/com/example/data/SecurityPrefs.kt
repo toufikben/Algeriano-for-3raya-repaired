@@ -81,6 +81,8 @@ class SecurityPrefs private constructor(private val context: Context) {
         private const val KEY_COUNTDOWN_RETRY_COUNT = "key_countdown_retry_count"
         private const val KEY_APP_PIN_SALT = "key_app_pin_salt"
         private const val KEY_APP_PIN_HASH = "key_app_pin_hash"
+        private const val KEY_PIN_FAILED_ATTEMPTS = "key_pin_failed_attempts"
+        private const val KEY_PIN_BLOCKED_UNTIL = "key_pin_blocked_until"
         private const val KEY_SECURITY_EVENTS_JSON = "key_security_events_json"
         private const val KEYSTORE_ALIAS = "intruder_security_credentials"
         private const val ENCRYPTED_PREFIX = "v1:"
@@ -92,6 +94,10 @@ class SecurityPrefs private constructor(private val context: Context) {
         private const val MAX_SEND_ATTEMPTS = 3
         private const val PIN_ITERATIONS = 120_000
         private const val PIN_KEY_LENGTH = 256
+        private const val PIN_MIN_LENGTH = 6
+        private const val PIN_MAX_LENGTH = 8
+        private const val PIN_LOCKOUT_THRESHOLD = 5
+        private const val PIN_LOCKOUT_MILLIS = 30_000L
         private const val DEFAULT_COUNTDOWN_DURATION_MILLIS = 60 * 60 * 1000L
 
         @Volatile
@@ -467,7 +473,7 @@ class SecurityPrefs private constructor(private val context: Context) {
             prefs.getString(KEY_APP_PIN_HASH, null).isNullOrBlank().not()
 
     fun setAppPin(pin: String): Boolean {
-        if (!pin.matches(Regex("\\d{4,8}"))) return false
+        if (!pin.matches(Regex("\\d{$PIN_MIN_LENGTH,$PIN_MAX_LENGTH}"))) return false
         val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
         val hash = derivePinHash(pin, salt)
         prefs.edit()
@@ -478,7 +484,8 @@ class SecurityPrefs private constructor(private val context: Context) {
     }
 
     fun verifyAppPin(pin: String): Boolean {
-        if (!hasAppPin || !pin.matches(Regex("\\d{4,8}"))) return false
+        // Legacy four- or five-digit PINs remain verifiable so users can migrate.
+        if (!hasAppPin || !pin.matches(Regex("\\d{4,$PIN_MAX_LENGTH}"))) return false
         return try {
             val salt = Base64.decode(prefs.getString(KEY_APP_PIN_SALT, ""), Base64.NO_WRAP)
             val expected = Base64.decode(prefs.getString(KEY_APP_PIN_HASH, ""), Base64.NO_WRAP)
@@ -491,6 +498,32 @@ class SecurityPrefs private constructor(private val context: Context) {
     fun changeAppPin(currentPin: String, newPin: String): Boolean {
         if (!verifyAppPin(currentPin)) return false
         return setAppPin(newPin)
+    }
+
+    fun isPinBlocked(now: Long = System.currentTimeMillis()): Boolean =
+        prefs.getLong(KEY_PIN_BLOCKED_UNTIL, 0L) > now
+
+    fun getPinBlockedUntil(): Long = prefs.getLong(KEY_PIN_BLOCKED_UNTIL, 0L)
+
+    @Synchronized
+    fun registerPinFailure(now: Long = System.currentTimeMillis()): Long {
+        if (isPinBlocked(now)) return prefs.getLong(KEY_PIN_BLOCKED_UNTIL, 0L)
+        val attempts = prefs.getInt(KEY_PIN_FAILED_ATTEMPTS, 0) + 1
+        return if (attempts >= PIN_LOCKOUT_THRESHOLD) {
+            val blockedUntil = now + PIN_LOCKOUT_MILLIS
+            prefs.edit().putInt(KEY_PIN_FAILED_ATTEMPTS, 0)
+                .putLong(KEY_PIN_BLOCKED_UNTIL, blockedUntil).apply()
+            blockedUntil
+        } else {
+            prefs.edit().putInt(KEY_PIN_FAILED_ATTEMPTS, attempts).apply()
+            0L
+        }
+    }
+
+    @Synchronized
+    fun resetPinFailures() {
+        prefs.edit().putInt(KEY_PIN_FAILED_ATTEMPTS, 0)
+            .putLong(KEY_PIN_BLOCKED_UNTIL, 0L).apply()
     }
 
     private fun derivePinHash(pin: String, salt: ByteArray): ByteArray {

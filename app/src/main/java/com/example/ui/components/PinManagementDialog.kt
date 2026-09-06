@@ -39,8 +39,7 @@ fun PinManagementDialog(
     var confirmation by remember { mutableStateOf("") }
     var showResetWarning by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var failedAttempts by remember { mutableStateOf(0) }
-    var blockedUntil by remember { mutableLongStateOf(0L) }
+    var blockedUntil by remember { mutableLongStateOf(prefs.getPinBlockedUntil()) }
     val isBlocked = blockedUntil > System.currentTimeMillis()
 
     LaunchedEffect(isBlocked) {
@@ -96,19 +95,18 @@ fun PinManagementDialog(
                 Button(enabled = !isBlocked, onClick = {
                     when {
                     !currentPin.matches(Regex("\\d{4,8}")) -> error = "أدخل PIN الحالي بشكل صحيح"
-                    !newPin.matches(Regex("\\d{4,8}")) -> error = "يجب أن يتكون PIN الجديد من 4 إلى 8 أرقام"
+                    !newPin.matches(Regex("\\d{6,8}")) -> error = "يجب أن يتكون PIN الجديد من 6 إلى 8 أرقام"
                     newPin != confirmation -> error = "رمزا PIN الجديد غير متطابقين"
                     !prefs.changeAppPin(currentPin, newPin) -> {
-                        failedAttempts += 1
                         error = "PIN الحالي غير صحيح"
-                        if (failedAttempts >= 5) {
-                            failedAttempts = 0
-                            blockedUntil = System.currentTimeMillis() + 30_000L
+                        val persistedBlockedUntil = prefs.registerPinFailure()
+                        if (persistedBlockedUntil > 0L) {
+                            blockedUntil = persistedBlockedUntil
                             error = "تم إيقاف المحاولات مؤقتاً لمدة 30 ثانية"
                         }
                     }
                     else -> {
-                        failedAttempts = 0
+                        prefs.resetPinFailures()
                         onDismiss()
                     }
                 }

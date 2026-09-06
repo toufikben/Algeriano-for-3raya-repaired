@@ -40,8 +40,7 @@ fun AppPinGate(
     var pin by remember { mutableStateOf("") }
     var confirmation by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    var failedAttempts by remember { mutableStateOf(0) }
-    var blockedUntil by remember { mutableLongStateOf(0L) }
+    var blockedUntil by remember { mutableLongStateOf(prefs.getPinBlockedUntil()) }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner, unlocked) {
@@ -75,7 +74,7 @@ fun AppPinGate(
         text = {
             Column {
                 Text(
-                    if (setupMode) "أنشئ رمزاً من 4 إلى 8 أرقام لحماية إعدادات التطبيق. لا تحفظ التطبيق الرمز نفسه، بل يخزن بصمة آمنة له."
+                    if (setupMode) "أنشئ رمزاً من 6 إلى 8 أرقام لحماية إعدادات التطبيق. لا تحفظ التطبيق الرمز نفسه، بل يخزن بصمة آمنة له."
                     else "أدخل رمز PIN للوصول إلى إعدادات الحماية والصورة والموقع.",
                     fontSize = 13.sp
                 )
@@ -115,22 +114,26 @@ fun AppPinGate(
                     if (isBlocked) return@Button
                     if (setupMode) {
                         when {
-                            !pin.matches(Regex("\\d{4,8}")) -> error = "يجب أن يتكون PIN من 4 إلى 8 أرقام"
+                            !pin.matches(Regex("\\d{6,8}")) -> error = "يجب أن يتكون PIN الجديد من 6 إلى 8 أرقام"
                             pin != confirmation -> error = "رمزا PIN غير متطابقين"
                             !prefs.setAppPin(pin) -> error = "تعذر حفظ PIN، حاول مرة أخرى"
-                            else -> { unlocked = true; pin = ""; confirmation = "" }
+                            else -> {
+                                prefs.resetPinFailures()
+                                unlocked = true
+                                pin = ""
+                                confirmation = ""
+                            }
                         }
                     } else if (prefs.verifyAppPin(pin)) {
                         unlocked = true
                         pin = ""
-                        failedAttempts = 0
+                        prefs.resetPinFailures()
                     } else {
                         pin = ""
-                        failedAttempts += 1
                         error = "رمز PIN غير صحيح"
-                        if (failedAttempts >= 5) {
-                            failedAttempts = 0
-                            blockedUntil = System.currentTimeMillis() + 30_000L
+                        val persistedBlockedUntil = prefs.registerPinFailure()
+                        if (persistedBlockedUntil > 0L) {
+                            blockedUntil = persistedBlockedUntil
                             error = "تم إيقاف المحاولات مؤقتاً لمدة 30 ثانية"
                         }
                     }

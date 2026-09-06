@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.Log
 import com.example.data.SecurityPrefs
 import com.example.service.CameraForegroundService
+import com.example.worker.SecurityEventDistributor
 
 class BootReceiver : BroadcastReceiver() {
 
@@ -17,6 +18,7 @@ class BootReceiver : BroadcastReceiver() {
         if (Intent.ACTION_BOOT_COMPLETED == action || "android.intent.action.QUICKBOOT_POWERON" == action) {
             val prefs = SecurityPrefs.getInstance(context)
             CountdownScheduler.rescheduleFromPrefs(context)
+            SecurityEventDistributor.enqueuePending(context)
             if (prefs.isTrackingEnabled) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     Log.w(
