@@ -43,7 +43,10 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onPasswordSucceeded(context: Context, intent: Intent) {
         super.onPasswordSucceeded(context, intent)
         val prefs = SecurityPrefs.getInstance(context)
-        prefs.resetFailedUnlockAttempts()
+        // Reset the next unlock session without cancelling an event already
+        // created for the preceding failed attempt; capture/email may still
+        // be processing asynchronously.
+        prefs.resetFailedUnlockAttempts(cancelPendingEvents = false)
         prefs.resetFailureAlertSession()
         com.example.receiver.CountdownScheduler.cancel(context)
         Log.d("DeviceAdminReceiver", "Password succeeded; consecutive failed attempts reset")

@@ -630,8 +630,17 @@ class CameraForegroundService : Service() {
         }
 
         try {
-            kotlinx.coroutines.withTimeoutOrNull(5000L) {
+            val currentLocation = kotlinx.coroutines.withTimeoutOrNull(5000L) {
                 locationDeferred.await()
+            }
+            currentLocation ?: run {
+                // Indoor or cold-GPS fixes can exceed five seconds. Use a
+                // recent cached location rather than reporting no location.
+                val fallback = kotlinx.coroutines.CompletableDeferred<Location?>()
+                fusedClient.lastLocation
+                    .addOnSuccessListener { fallback.complete(it) }
+                    .addOnFailureListener { fallback.complete(null) }
+                kotlinx.coroutines.withTimeoutOrNull(2000L) { fallback.await() }
             }
         } catch (e: Exception) {
             null

@@ -266,8 +266,9 @@ class SecurityPrefs private constructor(private val context: Context) {
 
     /** Resets the consecutive failed-unlock counter after a successful unlock. */
     @Synchronized
-    fun resetFailedUnlockAttempts() {
+    fun resetFailedUnlockAttempts(cancelPendingEvents: Boolean = true) {
         prefs.edit().putInt(KEY_FAILED_UNLOCK_ATTEMPTS, 0).apply()
+        if (!cancelPendingEvents) return
         updateSecurityEventsInRoom { events ->
             events.map { event ->
                 if (event.status == SecurityEventStatus.PENDING ||
