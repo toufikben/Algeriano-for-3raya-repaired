@@ -37,13 +37,13 @@ jobs:
 
       - name: Validate signing secrets
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "ANDROID_KEYSTORE_BASE64 is missing" >&2; exit 1; }
+          test -n "$KEYSTORE_BASE64" || { echo "KEYSTORE_BASE64 is missing" >&2; exit 1; }
           test -n "$KEYSTORE_PASSWORD" || { echo "KEYSTORE_PASSWORD is missing" >&2; exit 1; }
           test -n "$KEY_ALIAS" || { echo "KEY_ALIAS is missing" >&2; exit 1; }
           test -n "$KEY_PASSWORD" || { echo "KEY_PASSWORD is missing" >&2; exit 1; }
@@ -51,14 +51,14 @@ jobs:
 
       - name: Decode signing keystore
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
           KEYSTORE_PATH="$RUNNER_TEMP/phone-fortress-release.jks"
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
           chmod 600 "$KEYSTORE_PATH"
           {
             echo "KEYSTORE_PATH=$KEYSTORE_PATH"
