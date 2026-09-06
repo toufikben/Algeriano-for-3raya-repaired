@@ -258,6 +258,8 @@ class CameraForegroundService : Service() {
                 }
                 val lat = location?.latitude
                 val lng = location?.longitude
+                val photoCaptured = capturedFile != null
+                val locationCaptured = lat != null && lng != null
                 val locationText = if (lat != null && lng != null) {
                     "خط العرض (Latitude): $lat\nخط الطول (Longitude): $lng\nرابط خرائط جوجل:\nhttps://www.google.com/maps?q=$lat,$lng"
                 } else {
@@ -279,12 +281,17 @@ class CameraForegroundService : Service() {
                 val userPassword = prefs.password
                 var emailSuccess = false
                 var emailRetryable = false
-                var statusMsg = when {
-                    !cameraPermissionGranted -> "تعذر التقاط الصورة: إذن الكاميرا غير ممنوح"
-                    capturedFile == null -> "تعذر التقاط الصورة من الكاميرا"
-                    !locationPermissionGranted -> "تم التقاط الصورة، لكن إذن الموقع غير ممنوح"
-                    else -> ""
+                val photoStatus = when {
+                    photoCaptured -> "الصورة: تم الالتقاط"
+                    !cameraPermissionGranted -> "الصورة: فشل الالتقاط، إذن الكاميرا غير ممنوح"
+                    else -> "الصورة: فشل الالتقاط"
                 }
+                val locationStatus = when {
+                    locationCaptured -> "الموقع: تم التحديد"
+                    !locationPermissionGranted -> "الموقع: غير متاح، إذن الموقع غير ممنوح"
+                    else -> "الموقع: تعذر التحديد"
+                }
+                var statusMsg = listOf(photoStatus, locationStatus).joinToString("؛ ")
 
                 if (userEmail.isNotBlank() && userPassword.isNotBlank()) {
                     val subject = if (isTest) {
@@ -321,19 +328,13 @@ class CameraForegroundService : Service() {
                     emailSuccess = sendResult.isSuccess
                     emailRetryable = sendResult.retryable
                     val emailStatus = if (emailSuccess) {
-                        "تم إرسال بريد التنبيه بنجاح مع الصورة والموقع"
+                        "البريد: تم الإرسال"
                     } else {
-                        "فشل الإرسال: ${sendResult.errorMessage}"
+                        "البريد: فشل الإرسال: ${sendResult.errorMessage}"
                     }
-                    statusMsg = listOf(statusMsg, emailStatus)
-                        .filter { it.isNotBlank() }
-                        .joinToString("؛ ")
+                    statusMsg = "$statusMsg؛ $emailStatus"
                 } else {
-                    statusMsg = if (statusMsg.isBlank()) {
-                        "تم حفظ الصورة محلياً (البريد الإلكتروني غير مهيأ)"
-                    } else {
-                        "$statusMsg؛ البريد الإلكتروني غير مهيأ، لذلك لم يتم الإرسال"
-                    }
+                    statusMsg = "$statusMsg؛ البريد: غير مهيأ، لم يتم الإرسال"
                 }
 
                 if (!isTest && eventId != null) {
@@ -356,6 +357,8 @@ class CameraForegroundService : Service() {
                 val log = IntruderLog(
                     id = UUID.randomUUID().toString(),
                     eventId = eventId,
+                    photoCaptured = photoCaptured,
+                    locationCaptured = locationCaptured,
                     timestamp = timestamp,
                     photoPath = capturedFile?.absolutePath,
                     latitude = lat,
@@ -389,6 +392,8 @@ class CameraForegroundService : Service() {
                             IntruderLog(
                                 id = UUID.randomUUID().toString(),
                                 eventId = eventId,
+                                photoCaptured = !failedEvent?.photoPath.isNullOrBlank(),
+                                locationCaptured = failedEvent?.latitude != null && failedEvent.longitude != null,
                                 timestamp = failedEvent?.timestamp ?: System.currentTimeMillis(),
                                 photoPath = failedEvent?.photoPath,
                                 latitude = failedEvent?.latitude,

@@ -393,7 +393,7 @@ private fun IntruderLogItem(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (log.emailSent) "تم إرسال بريد التنبيه" else log.statusMessage,
+                        text = log.statusMessage,
                         fontSize = 11.sp,
                         color = when {
                             log.emailSent -> EmeraldActive
@@ -403,6 +403,16 @@ private fun IntruderLogItem(
                         maxLines = 2
                     )
                 }
+
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "الصورة: ${if (log.photoCaptured) "نجحت" else "فشلت"}؛ " +
+                        "الموقع: ${if (log.locationCaptured) "نجح" else "فشل"}؛ " +
+                        "البريد: ${if (log.emailSent) "نجح" else "لم ينجح"}",
+                    fontSize = 10.sp,
+                    color = Color(0xFF94A3B8),
+                    maxLines = 2
+                )
 
                 if (log.latitude != null && log.longitude != null) {
                     Spacer(modifier = Modifier.height(4.dp))

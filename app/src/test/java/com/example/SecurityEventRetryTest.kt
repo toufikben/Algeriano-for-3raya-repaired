@@ -65,6 +65,8 @@ class SecurityEventRetryTest {
         val first = IntruderLog(
             id = "first-log",
             eventId = "event-1",
+            photoCaptured = true,
+            locationCaptured = false,
             timestamp = 100L,
             photoPath = "/tmp/event-1.jpg",
             latitude = 36.7,
@@ -86,6 +88,8 @@ class SecurityEventRetryTest {
         assertEquals(1, logs.size)
         assertEquals("first-log", logs.single().id)
         assertEquals("event-1", logs.single().eventId)
+        assertTrue(logs.single().photoCaptured)
+        assertTrue(!logs.single().locationCaptured)
         assertTrue(logs.single().emailSent)
         assertEquals(1, prefs.totalAttempts)
     }

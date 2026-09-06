@@ -25,6 +25,8 @@ import java.util.UUID
 data class IntruderLog(
     val id: String,
     val eventId: String? = null,
+    val photoCaptured: Boolean = false,
+    val locationCaptured: Boolean = false,
     val timestamp: Long,
     val photoPath: String?,
     val latitude: Double?,
@@ -602,6 +604,16 @@ class SecurityPrefs private constructor(private val context: Context) {
                     IntruderLog(
                         id = obj.optString("id", System.currentTimeMillis().toString()),
                         eventId = obj.optString("eventId").takeIf { it.isNotEmpty() },
+                        photoCaptured = if (obj.has("photoCaptured")) {
+                            obj.optBoolean("photoCaptured")
+                        } else {
+                            !obj.optString("photoPath").isNullOrEmpty()
+                        },
+                        locationCaptured = if (obj.has("locationCaptured")) {
+                            obj.optBoolean("locationCaptured")
+                        } else {
+                            obj.has("latitude") && obj.has("longitude")
+                        },
                         timestamp = obj.optLong("timestamp", 0L),
                         photoPath = obj.optString("photoPath").takeIf { it.isNotEmpty() },
                         latitude = if (obj.has("latitude")) obj.optDouble("latitude") else null,
@@ -625,6 +637,8 @@ class SecurityPrefs private constructor(private val context: Context) {
                 val obj = JSONObject().apply {
                     put("id", log.id)
                     log.eventId?.let { put("eventId", it) }
+                    put("photoCaptured", log.photoCaptured)
+                    put("locationCaptured", log.locationCaptured)
                     put("timestamp", log.timestamp)
                     put("photoPath", log.photoPath ?: "")
                     if (log.latitude != null) put("latitude", log.latitude)
