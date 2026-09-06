@@ -218,6 +218,13 @@ fun SecurityMainScreen(
         permissionLauncher.launch(permissions.toTypedArray())
     }
 
+    LaunchedEffect(uiState.bannerMessage) {
+        uiState.bannerMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.dismissBanner()
+        }
+    }
+
     Scaffold(
         modifier = Modifier
             .fillMaxSize()

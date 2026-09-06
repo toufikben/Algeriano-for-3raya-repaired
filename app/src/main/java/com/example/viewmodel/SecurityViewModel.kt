@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
+import android.util.Patterns
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -110,9 +111,17 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         _uiState.update { it.copy(password = newPassword) }
     }
 
-    fun saveCredentials() {
+    fun saveCredentials(): Boolean {
         val email = _uiState.value.email.trim()
         val password = _uiState.value.password.trim()
+        if (email.isNotEmpty() && !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _uiState.update { it.copy(bannerMessage = "أدخل بريدًا إلكترونيًا صحيحًا مثل name@gmail.com") }
+            return false
+        }
+        if (email.isNotEmpty() && password.isEmpty()) {
+            _uiState.update { it.copy(bannerMessage = "أدخل كلمة مرور التطبيق مع البريد الإلكتروني") }
+            return false
+        }
         prefs.email = email
         prefs.password = password
 
@@ -121,6 +130,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             delay(2000)
             _uiState.update { it.copy(saveFeedback = false) }
         }
+        return true
     }
 
     fun toggleTracking(enabled: Boolean) {
@@ -172,7 +182,10 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         // Persist the values currently visible in the form before the service
         // reads credentials. This prevents the first test after editing from
         // using stale saved credentials.
-        saveCredentials()
+        if (!saveCredentials()) {
+            _uiState.update { it.copy(isTesting = false) }
+            return
+        }
         _uiState.update { it.copy(isTesting = true) }
 
         val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
