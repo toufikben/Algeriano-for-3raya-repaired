@@ -45,7 +45,9 @@ import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -235,11 +237,29 @@ class CameraForegroundService : Service() {
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 val timeStr = dateFormat.format(Date(timestamp))
 
-                // 1. Capture once; retries reuse the saved file.
-                val capturedFile = if (sendOnly) {
-                    existingEvent?.photoPath?.let(::File)?.takeIf { it.exists() }
-                } else {
-                    captureImageSilently()
+                // 1–2. Start the camera and location requests together. A
+                // retry reuses the saved photo/coordinates and does not start
+                // either hardware operation again.
+                val (capturedFile, location) = coroutineScope {
+                    val photoDeferred = async(Dispatchers.IO) {
+                        if (sendOnly) {
+                            existingEvent?.photoPath?.let(::File)?.takeIf { it.exists() }
+                        } else {
+                            captureImageSilently()
+                        }
+                    }
+                    val locationDeferred = async(Dispatchers.IO) {
+                        if (sendOnly && existingEvent?.latitude != null && existingEvent.longitude != null) {
+                            Location("saved-event").apply {
+                                latitude = existingEvent.latitude
+                                longitude = existingEvent.longitude
+                                time = existingEvent.locationTimestamp ?: existingEvent.timestamp
+                            }
+                        } else {
+                            fetchCurrentLocation()
+                        }
+                    }
+                    photoDeferred.await() to locationDeferred.await()
                 }
                 val cameraPermissionGranted = ActivityCompat.checkSelfPermission(
                     this@CameraForegroundService,
@@ -253,16 +273,6 @@ class CameraForegroundService : Service() {
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
 
-                // 2. Fetch once; retries reuse the saved coordinates.
-                val location = if (sendOnly && existingEvent?.latitude != null && existingEvent.longitude != null) {
-                    Location("saved-event").apply {
-                        latitude = existingEvent.latitude
-                        longitude = existingEvent.longitude
-                        time = existingEvent.locationTimestamp ?: existingEvent.timestamp
-                    }
-                } else {
-                    fetchCurrentLocation()
-                }
                 val lat = location?.latitude
                 val lng = location?.longitude
                 val photoCaptured = capturedFile != null
