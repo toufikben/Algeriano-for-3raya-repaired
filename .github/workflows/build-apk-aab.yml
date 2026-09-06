@@ -63,10 +63,10 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           set -euo pipefail
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/algeriano-upload-key.jks"
-          chmod 600 "$RUNNER_TEMP/algeriano-upload-key.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/phone-fortress-upload-key.jks"
+          chmod 600 "$RUNNER_TEMP/phone-fortress-upload-key.jks"
           {
-            echo "KEYSTORE_PATH=$RUNNER_TEMP/algeriano-upload-key.jks"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/phone-fortress-upload-key.jks"
             echo "STORE_PASSWORD=$STORE_PASSWORD"
             echo "KEY_PASSWORD=$KEY_PASSWORD"
             if [ -n "$KEY_ALIAS" ]; then

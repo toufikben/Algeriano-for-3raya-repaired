@@ -134,7 +134,7 @@ fun DeveloperInfoDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Algeriano for 3raya",
+                    text = "Phone Fortress",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                     color = Color.White,
@@ -190,7 +190,7 @@ fun DeveloperInfoDialog(
                     Text(
                         text = "إذا ظهرت لك رسالة «App was denied access» عند محاولة تفعيل مدير الجهاز:\n" +
                                 "1. افتح إعدادات هاتفك (Settings) ⬅️ التطبيقات (Apps).\n" +
-                                "2. ابحث عن تطبيق Algeriano for 3raya وافتحه.\n" +
+                                "2. ابحث عن تطبيق Phone Fortress وافتحه.\n" +
                                 "3. اضغط على قائمة الثلاث نقاط (⋮) في أعلى الشاشة.\n" +
                                 "4. اختر «السماح بالإعدادات المقيدة» (Allow restricted settings).\n" +
                                 "5. أدخل رمز قفل هاتفك للتأكيد، ثم ارجع للتطبيق وفعل الصلاحية بنجاح.",

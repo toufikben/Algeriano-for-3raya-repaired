@@ -61,7 +61,7 @@ object EmailSender {
                 setSubject(subject, "UTF-8")
                 eventId?.let {
                     setHeader("X-Security-Event-Id", it)
-                    setHeader("Message-ID", "<$it@algeriano-security.local>")
+                    setHeader("Message-ID", "<$it@phone-fortress-security.local>")
                 }
 
                 val multipart: Multipart = MimeMultipart()

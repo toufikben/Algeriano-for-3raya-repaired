@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Algeriano for 3raya"
+rootProject.name = "Phone Fortress"
 
 include(":app")

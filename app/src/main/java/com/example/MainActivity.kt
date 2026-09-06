@@ -248,7 +248,7 @@ fun SecurityMainScreen(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Algeriano for 3raya",
+                            text = "Phone Fortress",
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             color = Color.White

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Algeriano for 3raya</string>
+    <string name="app_name">Phone Fortress</string>
     <string name="device_admin_description">صلاحية مدير الجهاز ضرورية لرصد محاولات إدخال كلمة المرور أو النمط الخاطئ والتقاط صورة للمتسلل.</string>
     <string name="notification_channel_name">خدمة الحماية والأمان</string>
     <string name="notification_channel_desc">إشعار ظاهر عند تفعيل الحماية وتنبيهات نتائج المحاولات</string>
