@@ -169,6 +169,10 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
     }
 
     fun testAlert() {
+        // Persist the values currently visible in the form before the service
+        // reads credentials. This prevents the first test after editing from
+        // using stale saved credentials.
+        saveCredentials()
         _uiState.update { it.copy(isTesting = true) }
 
         val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
