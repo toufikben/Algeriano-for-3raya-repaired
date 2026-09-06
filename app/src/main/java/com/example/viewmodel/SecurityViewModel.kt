@@ -17,6 +17,7 @@ import com.example.receiver.CountdownScheduler
 import com.example.receiver.MyDeviceAdminReceiver
 import com.example.service.CameraForegroundService
 import com.example.worker.SecurityEventDistributor
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -237,7 +238,9 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
     }
 
     fun clearLogs() {
-        prefs.clearLogs()
+        viewModelScope.launch(Dispatchers.IO) {
+            prefs.clearLogs()
+        }
     }
 
     fun dismissBanner() {

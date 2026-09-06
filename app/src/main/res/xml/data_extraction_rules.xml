@@ -3,12 +3,16 @@
     <cloud-backup disableIfNoEncryptionCapabilities="true">
         <exclude domain="sharedpref" path="intruder_security_prefs.xml" />
         <exclude domain="database" path="security_data.db" />
+        <exclude domain="database" path="security_data.db-wal" />
+        <exclude domain="database" path="security_data.db-shm" />
         <exclude domain="file" path="intruder_photos" />
         <exclude domain="external" path="intruder_photos" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="intruder_security_prefs.xml" />
         <exclude domain="database" path="security_data.db" />
+        <exclude domain="database" path="security_data.db-wal" />
+        <exclude domain="database" path="security_data.db-shm" />
         <exclude domain="file" path="intruder_photos" />
         <exclude domain="external" path="intruder_photos" />
     </device-transfer>

@@ -66,6 +66,12 @@ interface SecurityDao {
     @Query("DELETE FROM security_events")
     fun clearEvents()
 
+    @androidx.room.Transaction
+    fun replaceEvents(events: List<SecurityEventEntity>) {
+        clearEvents()
+        upsertEvents(events)
+    }
+
     @Query("SELECT * FROM intruder_logs ORDER BY timestamp DESC")
     fun allLogs(): List<IntruderLogEntity>
 
@@ -80,6 +86,12 @@ interface SecurityDao {
 
     @Query("DELETE FROM intruder_logs")
     fun clearLogs()
+
+    @androidx.room.Transaction
+    fun replaceLogs(logs: List<IntruderLogEntity>) {
+        clearLogs()
+        upsertLogs(logs)
+    }
 }
 
 @Database(
@@ -115,8 +127,7 @@ class SecurityStore(context: Context) {
     fun events(): List<SecurityEvent> = io { dao.allEvents().map(SecurityEventEntity::toModel) }
     fun event(id: String): SecurityEvent? = io { dao.event(id)?.toModel() }
     fun replaceEvents(events: List<SecurityEvent>) = io {
-        dao.clearEvents()
-        dao.upsertEvents(events.map(SecurityEvent::toEntity))
+        dao.replaceEvents(events.map(SecurityEvent::toEntity))
     }
 
     fun logs(): List<IntruderLog> = io { dao.allLogs().map(IntruderLogEntity::toModel) }
@@ -124,8 +135,7 @@ class SecurityStore(context: Context) {
     fun logForEvent(eventId: String): IntruderLog? = io { dao.logForEvent(eventId)?.toModel() }
     fun upsertLog(log: IntruderLog) = io { dao.upsertLogs(listOf(log.toEntity())) }
     fun replaceLogs(logs: List<IntruderLog>) = io {
-        dao.clearLogs()
-        dao.upsertLogs(logs.map(IntruderLog::toEntity))
+        dao.replaceLogs(logs.map(IntruderLog::toEntity))
     }
 
     private fun <T> io(block: () -> T): T = runBlocking(Dispatchers.IO) { block() }
