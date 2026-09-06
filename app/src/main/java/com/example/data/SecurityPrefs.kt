@@ -24,6 +24,7 @@ import java.util.UUID
 
 data class IntruderLog(
     val id: String,
+    val eventId: String? = null,
     val timestamp: Long,
     val photoPath: String?,
     val latitude: Double?,
@@ -568,14 +569,24 @@ class SecurityPrefs private constructor(private val context: Context) {
     @Synchronized
     fun addLog(log: IntruderLog) {
         val currentLogs = getLogs().toMutableList()
-        currentLogs.add(0, log)
+        val existingIndex = log.eventId?.let { eventId ->
+            currentLogs.indexOfFirst { it.eventId == eventId }
+        } ?: -1
+        val isNewLog = existingIndex < 0
+        if (isNewLog) {
+            currentLogs.add(0, log)
+        } else {
+            currentLogs[existingIndex] = log.copy(id = currentLogs[existingIndex].id)
+        }
         // Keep max 50 logs
         val trimmed = if (currentLogs.size > 50) currentLogs.take(50) else currentLogs
         saveLogs(trimmed)
-        totalAttempts += 1
-        lastAttemptTime = log.timestamp
-        if (log.latitude != null && log.longitude != null) {
-            lastAttemptLocation = "${log.latitude}, ${log.longitude}"
+        if (isNewLog) {
+            totalAttempts += 1
+            lastAttemptTime = log.timestamp
+            if (log.latitude != null && log.longitude != null) {
+                lastAttemptLocation = "${log.latitude}, ${log.longitude}"
+            }
         }
         _logsFlow.value = trimmed
     }
@@ -590,6 +601,7 @@ class SecurityPrefs private constructor(private val context: Context) {
                 list.add(
                     IntruderLog(
                         id = obj.optString("id", System.currentTimeMillis().toString()),
+                        eventId = obj.optString("eventId").takeIf { it.isNotEmpty() },
                         timestamp = obj.optLong("timestamp", 0L),
                         photoPath = obj.optString("photoPath").takeIf { it.isNotEmpty() },
                         latitude = if (obj.has("latitude")) obj.optDouble("latitude") else null,
@@ -612,6 +624,7 @@ class SecurityPrefs private constructor(private val context: Context) {
             for (log in logs) {
                 val obj = JSONObject().apply {
                     put("id", log.id)
+                    log.eventId?.let { put("eventId", it) }
                     put("timestamp", log.timestamp)
                     put("photoPath", log.photoPath ?: "")
                     if (log.latitude != null) put("latitude", log.latitude)

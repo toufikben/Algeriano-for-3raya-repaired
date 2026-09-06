@@ -3,6 +3,7 @@ package com.example
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.SecurityEventStatus
+import com.example.data.IntruderLog
 import com.example.data.SecurityPrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -21,6 +22,7 @@ class SecurityEventRetryTest {
     fun setUp() {
         prefs = SecurityPrefs.getInstance(ApplicationProvider.getApplicationContext<Context>())
         prefs.resetFailedUnlockAttempts()
+        prefs.clearLogs()
     }
 
     @Test
@@ -56,5 +58,35 @@ class SecurityEventRetryTest {
         assertTrue(!prefs.recordSendRetry(event.id))
         assertEquals(SecurityEventStatus.FAILED_FINAL, prefs.getSecurityEvent(event.id)?.status)
         assertTrue(prefs.getPendingSecurityEvents().none { it.id == event.id })
+    }
+
+    @Test
+    fun `retry updates one intruder log for the same event`() {
+        val first = IntruderLog(
+            id = "first-log",
+            eventId = "event-1",
+            timestamp = 100L,
+            photoPath = "/tmp/event-1.jpg",
+            latitude = 36.7,
+            longitude = 3.0,
+            address = "36.7, 3.0",
+            emailSent = false,
+            statusMessage = "retry pending"
+        )
+        val retry = first.copy(
+            id = "second-log-must-not-replace-id",
+            emailSent = true,
+            statusMessage = "sent"
+        )
+
+        prefs.addLog(first)
+        prefs.addLog(retry)
+
+        val logs = prefs.getLogs()
+        assertEquals(1, logs.size)
+        assertEquals("first-log", logs.single().id)
+        assertEquals("event-1", logs.single().eventId)
+        assertTrue(logs.single().emailSent)
+        assertEquals(1, prefs.totalAttempts)
     }
 }

@@ -355,6 +355,7 @@ class CameraForegroundService : Service() {
                 // 4. Save Log
                 val log = IntruderLog(
                     id = UUID.randomUUID().toString(),
+                    eventId = eventId,
                     timestamp = timestamp,
                     photoPath = capturedFile?.absolutePath,
                     latitude = lat,
@@ -387,6 +388,7 @@ class CameraForegroundService : Service() {
                         prefs.addLog(
                             IntruderLog(
                                 id = UUID.randomUUID().toString(),
+                                eventId = eventId,
                                 timestamp = failedEvent?.timestamp ?: System.currentTimeMillis(),
                                 photoPath = failedEvent?.photoPath,
                                 latitude = failedEvent?.latitude,
