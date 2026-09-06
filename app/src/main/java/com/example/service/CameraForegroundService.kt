@@ -113,7 +113,14 @@ class CameraForegroundService : Service() {
             ACTION_START_MONITORING -> Unit
         }
 
-        return START_NOT_STICKY
+        // Ask Android to recreate the service after a system-initiated kill
+        // while protection is enabled. Explicit user stop above remains
+        // START_NOT_STICKY and therefore is not resurrected.
+        return if (SecurityPrefs.getInstance(applicationContext).isTrackingEnabled) {
+            START_STICKY
+        } else {
+            START_NOT_STICKY
+        }
     }
 
     private fun promoteToForeground(notification: Notification): Boolean {
@@ -740,6 +747,11 @@ class CameraForegroundService : Service() {
         super.onDestroy()
         closeCamera()
         stopBackgroundThread()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        Log.d(TAG, "App task removed; keeping foreground protection service alive")
+        super.onTaskRemoved(rootIntent)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
