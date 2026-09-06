@@ -17,7 +17,7 @@ android {
     applicationId = "com.toufikbendjeddah.phonefortress"
     minSdk = 24
     targetSdk = 36
-    versionCode = 10
+    versionCode = 11
     versionName = "1.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

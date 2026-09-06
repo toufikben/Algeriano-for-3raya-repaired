@@ -29,11 +29,22 @@ class CountdownReceiver : BroadcastReceiver() {
             CountdownScheduler.ACTION_EXPIRED -> {
                 if (prefs.countdownEnabled && (prefs.countdownCapturePending || prefs.countdownEndTime <= System.currentTimeMillis())) {
                     prefs.countdownCapturePending = true
+                    if (prefs.countdownEventId.isBlank()) {
+                        prefs.countdownEventId = prefs.enqueueSecurityEvent().id
+                    }
                     try {
                         val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
                             action = CameraForegroundService.ACTION_COUNTDOWN_EXPIRED
+                            putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, prefs.countdownEventId)
                         }
-                        ContextCompat.startForegroundService(context, serviceIntent)
+                        // The monitoring service is normally already in the
+                        // foreground. Reuse it first; only request a new FGS
+                        // start when Android reports that it is not running.
+                        try {
+                            context.startService(serviceIntent)
+                        } catch (_: Exception) {
+                            ContextCompat.startForegroundService(context, serviceIntent)
+                        }
                     } catch (e: Exception) {
                         CaptureRetryWorker.enqueue(context)
                     }
@@ -91,6 +102,7 @@ object CountdownScheduler {
         prefs.countdownEndTime = System.currentTimeMillis() + safeDuration
         prefs.countdownCapturePending = false
         prefs.countdownRetryCount = 0
+        prefs.countdownEventId = ""
         prefs.countdownEnabled = true
         CaptureRetryWorker.cancel(context)
         context.getSystemService(NotificationManager::class.java)?.cancel(WARNING_NOTIFICATION_ID)

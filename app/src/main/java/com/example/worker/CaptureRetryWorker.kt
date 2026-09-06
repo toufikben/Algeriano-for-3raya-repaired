@@ -24,6 +24,7 @@ class CaptureRetryWorker(
         return try {
             val intent = Intent(applicationContext, CameraForegroundService::class.java).apply {
                 action = CameraForegroundService.ACTION_COUNTDOWN_EXPIRED
+                putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, prefs.countdownEventId)
             }
             ContextCompat.startForegroundService(applicationContext, intent)
             Result.success()
