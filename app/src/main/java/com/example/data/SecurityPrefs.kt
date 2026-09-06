@@ -21,6 +21,7 @@ import javax.crypto.spec.GCMParameterSpec
 import java.nio.ByteBuffer
 import java.security.KeyStore
 import java.util.UUID
+import android.security.keystore.KeyPermanentlyInvalidatedException
 
 data class IntruderLog(
     val id: String,
@@ -138,7 +139,7 @@ class SecurityPrefs private constructor(private val context: Context) {
         return try {
             decrypt(stored.removePrefix(ENCRYPTED_PREFIX))
         } catch (e: Exception) {
-            Log.e("SecurityPrefs", "Unable to decrypt stored credential", e)
+            Log.e("SecurityPrefs", "Unable to decrypt stored credential: ${e.javaClass.simpleName}")
             ""
         }
     }
@@ -153,13 +154,20 @@ class SecurityPrefs private constructor(private val context: Context) {
             val encrypted = ENCRYPTED_PREFIX + encrypt(value)
             prefs.edit().putString(key, encrypted).apply()
         } catch (e: Exception) {
-            Log.e("SecurityPrefs", "Unable to encrypt credential; refusing to store it", e)
+            Log.e("SecurityPrefs", "Unable to encrypt credential: ${e.javaClass.simpleName}")
         }
     }
 
     private fun getOrCreateCredentialKey(): SecretKey {
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-        (keyStore.getKey(KEYSTORE_ALIAS, null) as? SecretKey)?.let { return it }
+        try {
+            (keyStore.getKey(KEYSTORE_ALIAS, null) as? SecretKey)?.let { return it }
+        } catch (_: KeyPermanentlyInvalidatedException) {
+            // A restored or changed device lock can invalidate the old key.
+            // Delete only the unusable key; callers will receive an empty secret
+            // rather than crashing or falling back to plaintext storage.
+            keyStore.deleteEntry(KEYSTORE_ALIAS)
+        }
 
         val generator = KeyGenerator.getInstance("AES", "AndroidKeyStore")
         generator.init(
