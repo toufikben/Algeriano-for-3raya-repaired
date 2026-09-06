@@ -753,6 +753,7 @@ class CameraForegroundService : Service() {
         try {
             cameraDevice?.close()
             cameraDevice = null
+            imageReader?.setOnImageAvailableListener(null, null)
             imageReader?.close()
             imageReader = null
         } catch (e: Exception) {
