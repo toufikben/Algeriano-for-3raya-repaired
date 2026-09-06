@@ -412,7 +412,9 @@ class CameraForegroundService : Service() {
                 }
             } finally {
                 captureInProgress.set(false)
-                wakeLock?.release()
+                if (wakeLock?.isHeld == true) {
+                    runCatching { wakeLock.release() }
+                }
                 if (!isServicePersistent()) {
                     stopForeground(false)
                     stopSelf()
@@ -436,7 +438,8 @@ class CameraForegroundService : Service() {
 
         var frontCameraId: String? = null
         try {
-            for (id in cameraManager.cameraIdList) {
+            val cameraIds = cameraManager.cameraIdList
+            for (id in cameraIds) {
                 val characteristics = cameraManager.getCameraCharacteristics(id)
                 val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
                 if (facing == CameraCharacteristics.LENS_FACING_FRONT) {
@@ -444,8 +447,8 @@ class CameraForegroundService : Service() {
                     break
                 }
             }
-            if (frontCameraId == null && cameraManager.cameraIdList.isNotEmpty()) {
-                frontCameraId = cameraManager.cameraIdList[0]
+            if (frontCameraId == null && cameraIds.isNotEmpty()) {
+                frontCameraId = cameraIds[0]
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error finding camera", e)
@@ -708,16 +711,18 @@ class CameraForegroundService : Service() {
     }
 
     private fun stopBackgroundThread() {
-        backgroundThread?.quitSafely()
+        val thread = backgroundThread ?: return
+        thread.quitSafely()
         try {
-            backgroundThread?.join()
+            if (Thread.currentThread() !== thread) thread.join(1000L)
             backgroundThread = null
             backgroundHandler = null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Unable to stop camera background thread cleanly", e)
         }
     }
 
+    @Synchronized
     private fun closeCamera() {
         try {
             cameraDevice?.close()
@@ -725,7 +730,7 @@ class CameraForegroundService : Service() {
             imageReader?.close()
             imageReader = null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "Unable to close camera resources cleanly", e)
         }
     }
 

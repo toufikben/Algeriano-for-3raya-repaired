@@ -87,7 +87,7 @@ class SecurityEventWorker(
     override suspend fun doWork(): Result {
         val eventId = SecurityEventDistributor.eventId(inputData) ?: return Result.failure()
         val prefs = SecurityPrefs.getInstance(applicationContext)
-        val event = prefs.getPendingSecurityEvents().firstOrNull { it.id == eventId }
+        val event = prefs.getPendingSecurityEvent(eventId)
             ?: return Result.success()
 
         // A camera foreground service must be started from a user-visible flow

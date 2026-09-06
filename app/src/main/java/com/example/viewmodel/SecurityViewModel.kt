@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 data class SecurityUiState(
@@ -81,7 +82,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             }
         }
         viewModelScope.launch {
-            while (true) {
+            while (isActive) {
                 delay(1000)
                 _uiState.update {
                     it.copy(

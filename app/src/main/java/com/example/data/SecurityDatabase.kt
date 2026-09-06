@@ -99,7 +99,11 @@ abstract class SecurityDatabase : RoomDatabase() {
                     context.applicationContext,
                     SecurityDatabase::class.java,
                     "security_data.db"
-                ).build().also { instance = it }
+                )
+                    // WAL lets the service and UI read without serializing all
+                    // readers behind a single rollback journal.
+                    .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+                    .build().also { instance = it }
             }
     }
 }

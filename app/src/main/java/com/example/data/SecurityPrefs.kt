@@ -414,6 +414,15 @@ class SecurityPrefs private constructor(private val context: Context) {
         }
     }
 
+    @Synchronized
+    fun getPendingSecurityEvent(id: String): SecurityEvent? {
+        return store.event(id)?.takeIf {
+            it.status == SecurityEventStatus.PENDING ||
+                it.status == SecurityEventStatus.SEND_PENDING ||
+                it.status == SecurityEventStatus.FAILED_RETRYABLE
+        }
+    }
+
     /** Re-queues abandoned work after a process/device restart, with a bounded retry count. */
     @Synchronized
     fun recoverStaleSecurityEvents(now: Long = System.currentTimeMillis()): Int {
