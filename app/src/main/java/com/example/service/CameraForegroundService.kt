@@ -228,6 +228,16 @@ class CameraForegroundService : Service() {
             return
         }
 
+        // Schedule the next countdown before touching camera, location, or email.
+        // A failure in any of those operations must not stop an auto-restarting timer.
+        val autoRestartCountdown = isCountdownCapture &&
+            prefs.countdownAutoRestart &&
+            prefs.isTrackingEnabled
+        if (autoRestartCountdown) {
+            CountdownScheduler.start(applicationContext, prefs.countdownDurationMillis)
+            Log.d(TAG, "Countdown completed; next cycle scheduled before capture")
+        }
+
         val wakeLock = acquireWakeLock()
 
         serviceScope.launch {
@@ -396,13 +406,8 @@ class CameraForegroundService : Service() {
                     locationAvailable = location != null
                 )
 
-                if (isCountdownCapture) {
-                    if (prefs.countdownAutoRestart && prefs.isTrackingEnabled) {
-                        CountdownScheduler.start(applicationContext, prefs.countdownDurationMillis)
-                        Log.d(TAG, "Countdown completed; automatically scheduled again")
-                    } else {
-                        prefs.clearCountdown()
-                    }
+                if (isCountdownCapture && !autoRestartCountdown) {
+                    prefs.clearCountdown()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error in processIntruderCapture", e)
