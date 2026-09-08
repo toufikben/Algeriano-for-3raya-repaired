@@ -78,7 +78,10 @@ fun AppPasswordGuideDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Key,
                             contentDescription = null,
@@ -88,6 +91,7 @@ fun AppPasswordGuideDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = tr(com.example.R.string.ui_bb2ff3994b74),
+                            modifier = Modifier.weight(1f),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

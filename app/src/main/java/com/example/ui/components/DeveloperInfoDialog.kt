@@ -86,7 +86,10 @@ fun DeveloperInfoDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Info,
                             contentDescription = null,
@@ -96,6 +99,7 @@ fun DeveloperInfoDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = tr(com.example.R.string.ui_bde567ded26b),
+                            modifier = Modifier.weight(1f),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -249,6 +253,7 @@ fun DeveloperInfoDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = tr(com.example.R.string.ui_5bc19849e76b),
+                            modifier = Modifier.weight(1f),
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFE2E8F0),
                             fontSize = 13.sp
@@ -288,6 +293,7 @@ fun DeveloperInfoDialog(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = tr(com.example.R.string.ui_76a2cd4d2144),
+                            modifier = Modifier.weight(1f),
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFE2E8F0),
                             fontSize = 13.sp
