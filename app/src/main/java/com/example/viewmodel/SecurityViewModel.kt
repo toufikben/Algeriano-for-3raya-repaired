@@ -1,5 +1,7 @@
 package com.example.viewmodel
 
+import com.example.R
+
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
@@ -71,7 +73,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         CountdownScheduler.rescheduleFromPrefs(context)
         if (recoveredEvents > 0) {
             _uiState.update {
-                it.copy(bannerMessage = "تمت استعادة $recoveredEvents منبهات معلقة؛ راجع سجل المحاولات")
+                it.copy(bannerMessage = context.getString(com.example.R.string.ui_recovered_events, recoveredEvents))
             }
         }
         SecurityEventDistributor.enqueuePending(context)
@@ -118,11 +120,11 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         val email = _uiState.value.email.trim()
         val password = _uiState.value.password.trim()
         if (email.isNotEmpty() && !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            _uiState.update { it.copy(bannerMessage = "أدخل بريدًا إلكترونيًا صحيحًا مثل name@gmail.com") }
+            _uiState.update { it.copy(bannerMessage = context.getString(com.example.R.string.ui_2def4fef47d3)) }
             return false
         }
         if (email.isNotEmpty() && password.isEmpty()) {
-            _uiState.update { it.copy(bannerMessage = "أدخل كلمة مرور التطبيق مع البريد الإلكتروني") }
+            _uiState.update { it.copy(bannerMessage = context.getString(com.example.R.string.ui_f509a4a96bac)) }
             return false
         }
         prefs.email = email
@@ -138,7 +140,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
 
     fun toggleTracking(enabled: Boolean) {
         if (enabled && !_uiState.value.isAdminActive) {
-            _uiState.update { it.copy(bannerMessage = "يرجى تفعيل صلاحية مدير الجهاز أولاً لتشغيل التتبع") }
+            _uiState.update { it.copy(bannerMessage = context.getString(com.example.R.string.ui_9a86733913f4)) }
             return
         }
 
@@ -170,10 +172,10 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             val message = when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                     e is ForegroundServiceStartNotAllowedException ->
-                    "رفض النظام تشغيل خدمة الحماية من الخلفية؛ افتح التطبيق وشغّل الحماية من الواجهة"
+                    context.getString(com.example.R.string.ui_66c3afea06a2)
                 e is SecurityException ->
-                    "لا يمكن تشغيل الخدمة؛ تحقق من صلاحيات الكاميرا والموقع"
-                else -> "تعذر تشغيل خدمة الحماية"
+                    context.getString(com.example.R.string.ui_e2e69f0a016c)
+                else -> context.getString(com.example.R.string.ui_91d96b8d9ec3)
             }
             _uiState.update { it.copy(bannerMessage = message, isTrackingEnabled = false) }
             prefs.isTrackingEnabled = false
@@ -203,10 +205,10 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             val message = when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                     e is ForegroundServiceStartNotAllowedException ->
-                    "رفض النظام الاختبار من الخلفية؛ أعد المحاولة والتطبيق مفتوح"
+                    context.getString(com.example.R.string.ui_d32a71996ff2)
                 e is SecurityException ->
-                    "لا يمكن اختبار الكاميرا؛ تحقق من صلاحية الكاميرا"
-                else -> "تعذر تشغيل اختبار الكاميرا"
+                    context.getString(com.example.R.string.ui_f6f4b6b1f861)
+                else -> context.getString(com.example.R.string.ui_634e11ba84ef)
             }
             _uiState.update { it.copy(bannerMessage = message, isTesting = false) }
         }
@@ -219,7 +221,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
 
     fun startCountdown(durationMillis: Long) {
         if (!_uiState.value.isTrackingEnabled) {
-            _uiState.update { it.copy(bannerMessage = "يرجى تشغيل الحماية أولاً لتفعيل المؤقت") }
+            _uiState.update { it.copy(bannerMessage = context.getString(com.example.R.string.ui_353209d98cda)) }
             return
         }
         CountdownScheduler.start(context, durationMillis)
@@ -242,7 +244,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
 
     fun resetCountdown() {
         if (!_uiState.value.isTrackingEnabled) {
-            _uiState.update { it.copy(bannerMessage = "يرجى تشغيل الحماية أولاً لإعادة تشغيل المؤقت") }
+            _uiState.update { it.copy(bannerMessage = context.getString(com.example.R.string.ui_3a57361fa5e4)) }
             return
         }
         CountdownScheduler.start(context, prefs.countdownDurationMillis)
@@ -252,7 +254,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
                 countdownEndTime = prefs.countdownEndTime,
                 countdownDurationMillis = prefs.countdownDurationMillis,
                 countdownRemainingMillis = remainingCountdownMillis(),
-                bannerMessage = "تمت إعادة ضبط المؤقت بنفس المدة"
+                bannerMessage = context.getString(com.example.R.string.ui_3651049d0311)
             )
         }
     }

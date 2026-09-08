@@ -38,6 +38,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -94,7 +96,7 @@ fun CredentialsCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "بيانات إرسال التنبيهات (Gmail)",
+                        text = tr(com.example.R.string.ui_c78dc36cf2c0),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -109,13 +111,13 @@ fun CredentialsCard(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.HelpOutline,
-                        contentDescription = "شرح كلمة مرور التطبيق",
+                        contentDescription = tr(com.example.R.string.ui_0e100d2f7f91),
                         tint = CyanAccent,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "كيفية الإعداد؟",
+                        text = tr(com.example.R.string.ui_ca7996a3184a),
                         color = CyanAccent,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
@@ -125,7 +127,7 @@ fun CredentialsCard(
 
             if (email.isBlank() || password.isBlank()) {
                 Text(
-                    text = "تنبيه: بدون بريد وكلمة مرور تطبيق صالحة سيتم حفظ الصورة والموقع محلياً فقط ولن يتم الإرسال.",
+                    text = tr(com.example.R.string.ui_8c211ebd655f),
                     color = Color(0xFFFCD34D),
                     fontSize = 11.sp,
                     lineHeight = 16.sp,
@@ -137,7 +139,7 @@ fun CredentialsCard(
 
             // Email Field
             Text(
-                text = "البريد الإلكتروني (Gmail)",
+                text = tr(com.example.R.string.ui_feedcb5f11fa),
                 color = Color(0xFFE2E8F0),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
@@ -176,7 +178,7 @@ fun CredentialsCard(
 
             // App Password Field
             Text(
-                text = "كلمة مرور التطبيق (App Password المكونة من 16 حرفاً)",
+                text = tr(com.example.R.string.ui_8edcf0354f73),
                 color = Color(0xFFE2E8F0),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
@@ -202,7 +204,7 @@ fun CredentialsCard(
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = if (passwordVisible) "إخفاء كلمة المرور" else "إظهار كلمة المرور",
+                            contentDescription = if (passwordVisible) tr(com.example.R.string.ui_7fbdeb8d974e) else tr(com.example.R.string.ui_6e7844e2d16a),
                             tint = Color(0xFF94A3B8)
                         )
                     }
@@ -222,7 +224,7 @@ fun CredentialsCard(
             )
 
             Text(
-                text = "تنبيه: لأمانك، لا تستخدم كلمة مرور حسابك العادية، بل استخدم App Password المنشأة من إعدادات أمان Google.",
+                text = tr(com.example.R.string.ui_c436c62fe6e6),
                 fontSize = 11.sp,
                 color = Color(0xFF94A3B8),
                 lineHeight = 16.sp,
@@ -251,7 +253,7 @@ fun CredentialsCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (saveFeedback) "تم حفظ الإعدادات بنجاح!" else "حفظ الإعدادات",
+                    text = if (saveFeedback) tr(com.example.R.string.ui_4c490ed1a5ff) else tr(com.example.R.string.ui_a5b4472cdfcd),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
@@ -259,3 +261,7 @@ fun CredentialsCard(
         }
     }
 }
+
+
+@androidx.compose.runtime.Composable
+private fun tr(@StringRes id: Int): String = stringResource(id)

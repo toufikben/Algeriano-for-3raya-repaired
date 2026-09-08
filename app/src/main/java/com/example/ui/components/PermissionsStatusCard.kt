@@ -32,6 +32,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -87,7 +89,7 @@ fun PermissionsStatusCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "صلاحيات النظام المطلوبة للعمل التلقائي",
+                    text = tr(com.example.R.string.ui_bb7409ea1546),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -99,10 +101,10 @@ fun PermissionsStatusCard(
             // 1. Device Admin
             PermissionItemRow(
                 icon = Icons.Filled.AdminPanelSettings,
-                title = "صلاحية مدير الجهاز (Device Admin)",
-                description = "إلزامية لرصد محاولات إدخال الرمز أو النمط الخاطئ",
+                title = tr(com.example.R.string.ui_dfca5c54ee21),
+                description = tr(com.example.R.string.ui_8996277630ec),
                 isGranted = isAdminActive,
-                actionLabel = "تفعيل مدير الجهاز",
+                actionLabel = tr(com.example.R.string.ui_378ce6372e8d),
                 onAction = onRequestAdmin,
                 testTag = "admin_permission_item"
             )
@@ -112,10 +114,10 @@ fun PermissionsStatusCard(
             // 2. Camera Permission
             PermissionItemRow(
                 icon = Icons.Filled.CameraAlt,
-                title = "إذن الكاميرا الأمامية",
-                description = "لالتقاط صورة المتسلل بصمت عند المحاولة الخاطئة",
+                title = tr(com.example.R.string.ui_a238b7a0cb51),
+                description = tr(com.example.R.string.ui_1a29890587a9),
                 isGranted = hasCameraPermission,
-                actionLabel = "منح إذن الكاميرا",
+                actionLabel = tr(com.example.R.string.ui_430a7406cef8),
                 onAction = onRequestCamera,
                 testTag = "camera_permission_item"
             )
@@ -125,10 +127,10 @@ fun PermissionsStatusCard(
             // 3. Location Permission
             PermissionItemRow(
                 icon = Icons.Filled.LocationOn,
-                title = "إذن الموقع الجغرافي (GPS)",
-                description = "لتحديد موقع الهاتف وإرسال إحداثياته عبر الخريطة",
+                title = tr(com.example.R.string.ui_b8c5dbe74ade),
+                description = tr(com.example.R.string.ui_243fddfb6e4b),
                 isGranted = hasLocationPermission,
-                actionLabel = "منح إذن الموقع",
+                actionLabel = tr(com.example.R.string.ui_dfaa5f777154),
                 onAction = onRequestLocation,
                 testTag = "location_permission_item"
             )
@@ -137,10 +139,10 @@ fun PermissionsStatusCard(
 
             PermissionItemRow(
                 icon = Icons.Filled.Notifications,
-                title = "إذن الإشعارات",
-                description = "لعرض تحذير اقتراب انتهاء المؤقت ونتيجة الإرسال",
+                title = tr(com.example.R.string.ui_859c512e412c),
+                description = tr(com.example.R.string.ui_5f7985e90dd3),
                 isGranted = hasNotificationPermission,
-                actionLabel = "منح إذن الإشعارات",
+                actionLabel = tr(com.example.R.string.ui_48b1ed1ba097),
                 onAction = onRequestNotifications,
                 testTag = "notification_permission_item"
             )
@@ -150,10 +152,10 @@ fun PermissionsStatusCard(
             // 4. Battery Optimization
             PermissionItemRow(
                 icon = Icons.Filled.BatteryAlert,
-                title = "استثناء من توفير البطارية",
-                description = "لضمان استمرار عمل الخدمة في الخلفية دون إيقافها من النظام",
+                title = tr(com.example.R.string.ui_08c7fc5ec3ee),
+                description = tr(com.example.R.string.ui_bdd25a7f5bbc),
                 isGranted = isBatteryOptimizationIgnored,
-                actionLabel = "استثناء التطبيق",
+                actionLabel = tr(com.example.R.string.ui_d3599d656bea),
                 onAction = onRequestBatteryExemption,
                 testTag = "battery_permission_item"
             )
@@ -242,7 +244,7 @@ private fun PermissionItemRow(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "ممنوح",
+                        text = tr(com.example.R.string.ui_01174a24f865),
                         color = EmeraldActive,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
@@ -272,3 +274,7 @@ private fun PermissionItemRow(
         }
     }
 }
+
+
+@androidx.compose.runtime.Composable
+private fun tr(@StringRes id: Int): String = stringResource(id)

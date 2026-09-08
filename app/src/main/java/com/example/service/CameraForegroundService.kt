@@ -82,11 +82,7 @@ class CameraForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        val prefs = SecurityPrefs.getInstance(applicationContext)
-        prefs.recoverStaleSecurityEvents()
-        // Rebuild alarms when Android/OEM process cleanup removed them while
-        // the persisted protection countdown is still active.
-        CountdownScheduler.rescheduleFromPrefs(applicationContext)
+        SecurityPrefs.getInstance(applicationContext).recoverStaleSecurityEvents()
         startBackgroundThread()
     }
 
@@ -292,9 +288,9 @@ class CameraForegroundService : Service() {
                 val photoCaptured = capturedFile != null
                 val locationCaptured = lat != null && lng != null
                 val locationText = if (lat != null && lng != null) {
-                    "خط العرض (Latitude): $lat\nخط الطول (Longitude): $lng\nرابط خرائط جوجل:\nhttps://www.google.com/maps?q=$lat,$lng"
+                    getString(com.example.R.string.ui_location_coordinates, lat.toString(), lng.toString())
                 } else {
-                    "الموقع غير متاح (تعذر تحديد إحداثيات GPS أو تم تعطيل الصلاحية)"
+                    getString(com.example.R.string.ui_c0ae8d5ba4fa)
                 }
 
                 if (!isTest && eventId != null && !sendOnly) {
@@ -313,40 +309,41 @@ class CameraForegroundService : Service() {
                 var emailSuccess = false
                 var emailRetryable = false
                 val photoStatus = when {
-                    photoCaptured -> "الصورة: تم الالتقاط"
-                    !cameraPermissionGranted -> "الصورة: فشل الالتقاط، إذن الكاميرا غير ممنوح"
-                    else -> "الصورة: فشل الالتقاط"
+                    photoCaptured -> getString(com.example.R.string.ui_dd886e527edc)
+                    !cameraPermissionGranted -> getString(com.example.R.string.ui_6ae598a1fca6)
+                    else -> getString(com.example.R.string.ui_22a64e14f4b3)
                 }
                 val locationStatus = when {
-                    locationCaptured -> "الموقع: تم التحديد"
-                    !locationPermissionGranted -> "الموقع: غير متاح، إذن الموقع غير ممنوح"
-                    else -> "الموقع: تعذر التحديد"
+                    locationCaptured -> getString(com.example.R.string.ui_c0a3068f31ba)
+                    !locationPermissionGranted -> getString(com.example.R.string.ui_243471de5777)
+                    else -> getString(com.example.R.string.ui_9e2833dca3b0)
                 }
-                var statusMsg = listOf(photoStatus, locationStatus).joinToString("؛ ")
+                var statusMsg = listOf(photoStatus, locationStatus).joinToString(getString(com.example.R.string.ui_separator))
 
                 if (userEmail.isNotBlank() && userPassword.isNotBlank()) {
                     val subject = if (isTest) {
-                        "🔔 اختبار كاشف المتسللين: نجاح التجربة ($timeStr)"
+                        getString(com.example.R.string.ui_test_subject, timeStr)
                     } else {
-                        "🚨 تحذير أمني عاجل: محاولة فتح هاتف غير مصرح بها! ($timeStr)"
+                        getString(com.example.R.string.ui_alert_subject, timeStr)
                     }
 
                     val body = """
-                        تحية طيبة،
+                        ${getString(com.example.R.string.ui_greeting)}
                         
-                        ${if (isTest) "هذه رسالة اختبارية من تطبيق حماية الهاتف لتأكيد صحة إعدادات البريد الإلكتروني والكاميرا والموقع." else "تم رصد محاولة إدخال كلمة مرور أو نمط خاطئ على هاتفك المحمول."}
+                        ${getString(if (isTest) com.example.R.string.ui_test_body else com.example.R.string.ui_intrusion_body)}
                         
-                        📅 التوقيت: $timeStr
-                        📍 الموقع الجغرافي:
+                        ${getString(com.example.R.string.ui_time_label, timeStr)}
+                        ${getString(com.example.R.string.ui_location_label)}
                         $locationText
                         
-                        📷 صورة الكاميرا الأمامية: مرفقة مع هذه الرسالة.
+                        ${getString(com.example.R.string.ui_photo_attached)}
                         
                         ---
-                        تم الإرسال تلقائياً بواسطة تطبيق حماية الهاتف وكاشف المتسللين.
+                        ${getString(com.example.R.string.ui_auto_sent)}
                     """.trimIndent()
 
                     val sendResult = EmailSender.sendSecurityAlert(
+                        context = this@CameraForegroundService,
                         senderEmail = userEmail,
                         appPassword = userPassword,
                         recipientEmail = userEmail,
@@ -359,13 +356,13 @@ class CameraForegroundService : Service() {
                     emailSuccess = sendResult.isSuccess
                     emailRetryable = sendResult.retryable
                     val emailStatus = if (emailSuccess) {
-                        "البريد: تم الإرسال"
+                        getString(com.example.R.string.ui_fd5b9e2ff279)
                     } else {
-                        "البريد: فشل الإرسال: ${sendResult.errorMessage}"
+                        getString(com.example.R.string.ui_email_failed, sendResult.errorMessage ?: "")
                     }
-                    statusMsg = "$statusMsg؛ $emailStatus"
+                    statusMsg = "$statusMsg${getString(com.example.R.string.ui_separator)}$emailStatus"
                 } else {
-                    statusMsg = "$statusMsg؛ البريد: غير مهيأ، لم يتم الإرسال"
+                    statusMsg = "$statusMsg${getString(com.example.R.string.ui_separator)}${getString(com.example.R.string.ui_email_unconfigured)}"
                 }
 
                 if (!isTest && eventId != null) {
@@ -377,10 +374,10 @@ class CameraForegroundService : Service() {
                     ) {
                         prefs.markSendPendingForRetry(eventId)
                         SecurityEventDistributor.enqueue(applicationContext, eventId)
-                        statusMsg = "$statusMsg؛ فشل مؤقت: تمت جدولة إعادة إرسال البريد دون إعادة التقاط الصورة"
+                        statusMsg = "$statusMsg${getString(com.example.R.string.ui_separator)}${getString(com.example.R.string.ui_retry_scheduled)}"
                     } else {
                         prefs.completeSecurityEvent(eventId, SecurityEventStatus.FAILED_FINAL)
-                        statusMsg = "$statusMsg؛ فشل نهائي: لن تتم إعادة المحاولة تلقائياً"
+                        statusMsg = "$statusMsg${getString(com.example.R.string.ui_separator)}${getString(com.example.R.string.ui_final_failure)}"
                     }
                 }
 
@@ -433,7 +430,7 @@ class CameraForegroundService : Service() {
                                     "${failedEvent.latitude}, ${failedEvent.longitude}"
                                 } else null,
                                 emailSent = false,
-                                statusMessage = "FAILED_FINAL: فشل غير متوقع أثناء معالجة الحدث: ${e.javaClass.simpleName}"
+                                statusMessage = getString(com.example.R.string.ui_unexpected_event, e.javaClass.simpleName)
                             )
                         )
                     }
@@ -690,20 +687,20 @@ class CameraForegroundService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = if (isTest) "اختبار كاشف المتسللين" else "🚨 تنبيه أمان: محاولة فتح خاطئة!"
+        val title = if (isTest) getString(com.example.R.string.ui_12e7498cb299) else getString(com.example.R.string.ui_98c4ee03d7e4)
         val resultText = when {
             emailSent && photoCaptured && locationAvailable ->
-                "تم التقاط الصورة وتحديد الموقع وإرسال التنبيه إلى بريدك"
+                getString(com.example.R.string.ui_84f757b6cc1f)
             emailSent && photoCaptured ->
-                "تم التقاط الصورة وإرسال التنبيه؛ الموقع غير متاح"
+                getString(com.example.R.string.ui_02ef3442fe06)
             emailSent ->
-                "تم إرسال التنبيه؛ تعذر التقاط الصورة أو تحديد الموقع"
+                getString(com.example.R.string.ui_f2c0b25654bc)
             photoCaptured && locationAvailable ->
-                "تم التقاط الصورة وتحديد الموقع، لكن تعذر إرسال البريد"
+                getString(com.example.R.string.ui_7ea431a98540)
             photoCaptured ->
-                "تم التقاط الصورة، لكن الموقع أو إرسال البريد غير متاح"
+                getString(com.example.R.string.ui_cc8fa378c847)
             else ->
-                "تم تسجيل المحاولة، لكن التقاط الصورة لم ينجح"
+                getString(com.example.R.string.ui_2386801c5fa2)
         }
         val text = "$resultText ($timeStr)"
 
@@ -776,12 +773,6 @@ class CameraForegroundService : Service() {
     }
 
     override fun onDestroy() {
-        // A normal user stop clears countdownEnabled first. Therefore this
-        // only repairs scheduling after an unexpected service destruction.
-        val prefs = SecurityPrefs.getInstance(applicationContext)
-        if (prefs.isTrackingEnabled && prefs.countdownEnabled) {
-            CountdownScheduler.rescheduleFromPrefs(applicationContext)
-        }
         serviceScope.cancel()
         foregroundStarted = false
         super.onDestroy()

@@ -21,6 +21,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -52,10 +54,10 @@ fun PinManagementDialog(
     if (showResetWarning) {
         AlertDialog(
             onDismissRequest = { showResetWarning = false },
-            title = { Text("إعادة ضبط التطبيق بالكامل؟") },
+            title = { Text(tr(com.example.R.string.ui_d6b354ff91de)) },
             text = {
                 Text(
-                    "لأمانك لا يوجد تجاوز لـ PIN. سيتم فتح إعدادات أندرويد، ومن هناك يمكنك اختيار مسح بيانات التطبيق. هذا سيحذف PIN والسجلات والإعدادات وقد يوقف الحماية."
+                    tr(com.example.R.string.ui_258dec0e9a99)
                 )
             },
             confirmButton = {
@@ -66,10 +68,10 @@ fun PinManagementDialog(
                         Uri.parse("package:${context.packageName}")
                     )
                     context.startActivity(intent)
-                }) { Text("فتح إعدادات أندرويد") }
+                }) { Text(tr(com.example.R.string.ui_6d8288ba5097)) }
             },
             dismissButton = {
-                TextButton(onClick = { showResetWarning = false }) { Text("إلغاء") }
+                TextButton(onClick = { showResetWarning = false }) { Text(tr(com.example.R.string.ui_e776b0209b50)) }
             }
         )
         return
@@ -77,14 +79,14 @@ fun PinManagementDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("إدارة PIN التطبيق") },
+        title = { Text(tr(com.example.R.string.ui_17b11cf37f25)) },
         text = {
             Column {
-                PinField(currentPin, { currentPin = it; error = null }, "PIN الحالي")
+                PinField(currentPin, { currentPin = it; error = null }, tr(com.example.R.string.ui_c8522f0305c3))
                 Spacer(Modifier.height(8.dp))
-                PinField(newPin, { newPin = it; error = null }, "PIN الجديد")
+                PinField(newPin, { newPin = it; error = null }, tr(com.example.R.string.ui_58306554a47d))
                 Spacer(Modifier.height(8.dp))
-                PinField(confirmation, { confirmation = it; error = null }, "تأكيد PIN الجديد")
+                PinField(confirmation, { confirmation = it; error = null }, tr(com.example.R.string.ui_bcf33093a0fa))
                 error?.let {
                     Spacer(Modifier.height(8.dp))
                     Text(it, color = androidx.compose.ui.graphics.Color(0xFFDC2626), fontSize = 12.sp)
@@ -94,15 +96,15 @@ fun PinManagementDialog(
         confirmButton = {
                 Button(enabled = !isBlocked, onClick = {
                     when {
-                    !currentPin.matches(Regex("\\d{4,8}")) -> error = "أدخل PIN الحالي بشكل صحيح"
-                    !newPin.matches(Regex("\\d{6,8}")) -> error = "يجب أن يتكون PIN الجديد من 6 إلى 8 أرقام"
-                    newPin != confirmation -> error = "رمزا PIN الجديد غير متطابقين"
+                    !currentPin.matches(Regex("\\d{4,8}")) -> error = tr(com.example.R.string.ui_e18e557fd5d6)
+                    !newPin.matches(Regex("\\d{6,8}")) -> error = tr(com.example.R.string.ui_8dd08f154388)
+                    newPin != confirmation -> error = tr(com.example.R.string.ui_8d10332dd5a1)
                     !prefs.changeAppPin(currentPin, newPin) -> {
-                        error = "PIN الحالي غير صحيح"
+                        error = tr(com.example.R.string.ui_35c16c4d4620)
                         val persistedBlockedUntil = prefs.registerPinFailure()
                         if (persistedBlockedUntil > 0L) {
                             blockedUntil = persistedBlockedUntil
-                            error = "تم إيقاف المحاولات مؤقتاً لمدة 30 ثانية"
+                            error = tr(com.example.R.string.ui_9816b280d8ee)
                         }
                     }
                     else -> {
@@ -110,10 +112,10 @@ fun PinManagementDialog(
                         onDismiss()
                     }
                 }
-            }) { Text(if (isBlocked) "المحاولة متوقفة مؤقتاً" else "حفظ PIN الجديد") }
+            }) { Text(if (isBlocked) tr(com.example.R.string.ui_7429493736f9) else tr(com.example.R.string.ui_f09f791e2ff8)) }
         },
         dismissButton = {
-            TextButton(onClick = { showResetWarning = true }) { Text("نسيت PIN؟") }
+            TextButton(onClick = { showResetWarning = true }) { Text(tr(com.example.R.string.ui_5c2d36070240)) }
         }
     )
 }
@@ -130,3 +132,7 @@ private fun PinField(value: String, onValueChange: (String) -> Unit, label: Stri
         modifier = Modifier.fillMaxWidth()
     )
 }
+
+
+@androidx.compose.runtime.Composable
+private fun tr(@StringRes id: Int): String = stringResource(id)

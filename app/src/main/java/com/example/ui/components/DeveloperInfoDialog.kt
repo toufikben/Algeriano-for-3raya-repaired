@@ -38,6 +38,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -93,7 +95,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "معلومات عن التطبيق والمبرمج",
+                            text = tr(com.example.R.string.ui_bde567ded26b),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -103,7 +105,7 @@ fun DeveloperInfoDialog(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Filled.Close,
-                            contentDescription = "إغلاق",
+                            contentDescription = tr(com.example.R.string.ui_5bf826c5e57c),
                             tint = Color(0xFF94A3B8)
                         )
                     }
@@ -142,7 +144,7 @@ fun DeveloperInfoDialog(
                 )
 
                 Text(
-                    text = "تطبيق حماية الهاتف وكاشف المتسللين",
+                    text = tr(com.example.R.string.ui_4194b339b21b),
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp,
                     color = Color(0xFF94A3B8),
@@ -152,7 +154,7 @@ fun DeveloperInfoDialog(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "الإصدار: 1.0.0 (أحدث إصدار)",
+                    text = tr(com.example.R.string.ui_ed3327bec79e),
                     fontSize = 12.sp,
                     color = EmeraldActive,
                     fontWeight = FontWeight.Medium
@@ -178,7 +180,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "حل مشكلة صلاحية مدير الجهاز (أندرويد 13 فما فوق):",
+                            text = tr(com.example.R.string.ui_235dd7facf19),
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFEF3C7),
                             fontSize = 13.sp
@@ -188,12 +190,12 @@ fun DeveloperInfoDialog(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "إذا ظهرت لك رسالة «App was denied access» عند محاولة تفعيل مدير الجهاز:\n" +
-                                "1. افتح إعدادات هاتفك (Settings) ⬅️ التطبيقات (Apps).\n" +
-                                "2. ابحث عن تطبيق Phone Fortress وافتحه.\n" +
-                                "3. اضغط على قائمة الثلاث نقاط (⋮) في أعلى الشاشة.\n" +
-                                "4. اختر «السماح بالإعدادات المقيدة» (Allow restricted settings).\n" +
-                                "5. أدخل رمز قفل هاتفك للتأكيد، ثم ارجع للتطبيق وفعل الصلاحية بنجاح.",
+                        text = tr(com.example.R.string.ui_c03a47548c0a) +
+                                tr(com.example.R.string.ui_08eecf918378) +
+                                tr(com.example.R.string.ui_a422b69cf6d3) +
+                                tr(com.example.R.string.ui_9eaaf66601aa) +
+                                tr(com.example.R.string.ui_a0e4d77de101) +
+                                tr(com.example.R.string.ui_e120a7c1a8a3),
                         color = Color(0xFFFDE68A),
                         fontSize = 12.sp,
                         lineHeight = 18.sp
@@ -220,7 +222,7 @@ fun DeveloperInfoDialog(
                         )
                     ) {
                         Text(
-                            text = "الانتقال المباشر لصفحة معلومات التطبيق",
+                            text = tr(com.example.R.string.ui_531637fc771f),
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
@@ -246,7 +248,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "تطوير وبرمجة:",
+                            text = tr(com.example.R.string.ui_5bc19849e76b),
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFE2E8F0),
                             fontSize = 13.sp
@@ -268,7 +270,7 @@ fun DeveloperInfoDialog(
                             .clickable {
                                 val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
                                     data = Uri.parse("mailto:$devEmail")
-                                    putExtra(Intent.EXTRA_SUBJECT, "استفسار حول تطبيق حماية الهاتف")
+                                    putExtra(Intent.EXTRA_SUBJECT, tr(com.example.R.string.ui_bd6640986dcd))
                                 }
                                 try {
                                     context.startActivity(emailIntent)
@@ -285,7 +287,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "البريد الإلكتروني:",
+                            text = tr(com.example.R.string.ui_76a2cd4d2144),
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFE2E8F0),
                             fontSize = 13.sp
@@ -322,7 +324,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "إهـداء:",
+                            text = tr(com.example.R.string.ui_ba976163ccd7),
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF6EE7B7),
                             fontSize = 14.sp
@@ -332,7 +334,7 @@ fun DeveloperInfoDialog(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "إلى أمي، وأبي رحمه الله، وإخوتي، وأصدقائي، وكل المسلمين الموحدين على نهج السلف الصالح.\n\nمن متسرب مدرسي.. نسأل الله التقوى والإخلاص والتوحيد.. جزاكم الله خيراً.",
+                        text = tr(com.example.R.string.ui_adff3d413ae6),
                         color = Color(0xFFE6FFFA),
                         fontSize = 12.5.sp,
                         lineHeight = 20.sp,
@@ -351,14 +353,14 @@ fun DeveloperInfoDialog(
                         .padding(14.dp)
                 ) {
                     Text(
-                        text = "🛡️ ميزات الأمان المدمجة:",
+                        text = tr(com.example.R.string.ui_622bb7698201),
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "• مراقبة محاولات فتح الشاشة الخاطئة (رمز PIN، نمط، كلمة سر) عبر Device Admin.\n• التقاط صورة صامتة من الكاميرا الأمامية فور الفشل.\n• تحديد إحداثيات GPS بدقة وإرفاق رابط خرائط جوجل.\n• إرسال بريد فوري إلى حسابك عبر SMTP آمن ومباشر.\n• بدء التشغيل التلقائي بعد إعادة تشغيل الجهاز (Boot Completed).",
+                        text = tr(com.example.R.string.ui_df898b5c62e7),
                         color = Color(0xFFCBD5E1),
                         fontSize = 12.sp,
                         lineHeight = 18.sp
@@ -376,9 +378,13 @@ fun DeveloperInfoDialog(
                         contentColor = Color.Black
                     )
                 ) {
-                    Text("إغلاق", fontWeight = FontWeight.Bold)
+                    Text(tr(com.example.R.string.ui_5bf826c5e57c), fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
+
+
+@androidx.compose.runtime.Composable
+private fun tr(@StringRes id: Int): String = stringResource(id)

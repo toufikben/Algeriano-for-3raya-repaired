@@ -42,6 +42,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -127,7 +129,7 @@ fun ProtectionToggleCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isTrackingEnabled) "نظام التتبع والحماية نَشِط" else "نظام التتبع والحماية مُتَوقّف",
+                    text = if (isTrackingEnabled) tr(com.example.R.string.ui_d4a1d92f7a68) else tr(com.example.R.string.ui_edb2324aba4d),
                     color = animatedStatusColor,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
@@ -171,7 +173,7 @@ fun ProtectionToggleCard(
                 ) {
                     Icon(
                         imageVector = if (isTrackingEnabled) Icons.Filled.Shield else Icons.Filled.PowerSettingsNew,
-                        contentDescription = "زر تشغيل وإيقاف الحماية",
+                        contentDescription = tr(com.example.R.string.ui_3d9e78dd04a7),
                         tint = Color.White,
                         modifier = Modifier.size(38.dp)
                     )
@@ -181,7 +183,7 @@ fun ProtectionToggleCard(
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = if (isTrackingEnabled) "الحماية نشطة وإشعارها ظاهر" else "اضغط لتشغيل الحماية",
+                text = if (isTrackingEnabled) tr(com.example.R.string.ui_b60bfe569ba1) else tr(com.example.R.string.ui_2bbe3b683d12),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -190,9 +192,9 @@ fun ProtectionToggleCard(
 
             Text(
                 text = if (isTrackingEnabled)
-                    "يرصد التطبيق محاولات فتح القفل الخاطئة. بعد بلوغ الحد المحدد سيحاول إنشاء تنبيه؛ وقد يمنع Android استخدام الكاميرا من الخلفية."
+                    tr(com.example.R.string.ui_323408b91800)
                 else
-                    "فعّل الحماية بإرادتك. سيظهر إشعار دائم أثناء التفعيل، وقد يتطلب التقاط الصورة فتح التطبيق بسبب قيود Android.",
+                    tr(com.example.R.string.ui_c2fadb3ac9a4),
                 fontSize = 13.sp,
                 color = Color(0xFFCBD5E1),
                 textAlign = TextAlign.Center,
@@ -222,13 +224,13 @@ fun ProtectionToggleCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "تشغيل / إيقاف التتبع",
+                            text = tr(com.example.R.string.ui_0b934d91473e),
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White,
                             fontSize = 14.sp
                         )
                         Text(
-                            text = if (isTrackingEnabled) "مفعل والإشعار ظاهر" else "معطل حالياً",
+                            text = if (isTrackingEnabled) tr(com.example.R.string.ui_1a7235262e3e) else tr(com.example.R.string.ui_a824491814b1),
                             color = Color(0xFF94A3B8),
                             fontSize = 11.sp
                         )
@@ -272,7 +274,7 @@ fun ProtectionToggleCard(
                         color = Color(0xFF38BDF8)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text("جاري الاختبار والتقاط الصورة...", fontSize = 13.sp)
+                    Text(tr(com.example.R.string.ui_9caa8b48d322), fontSize = 13.sp)
                 } else {
                     Icon(
                         imageVector = Icons.Filled.CameraAlt,
@@ -281,7 +283,7 @@ fun ProtectionToggleCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "تجربة التقاط صورة وإرسال تنبيه تجريبي",
+                        text = tr(com.example.R.string.ui_8f304ba307b2),
                         fontWeight = FontWeight.Medium,
                         fontSize = 13.sp
                     )
@@ -290,3 +292,7 @@ fun ProtectionToggleCard(
         }
     }
 }
+
+
+@androidx.compose.runtime.Composable
+private fun tr(@StringRes id: Int): String = stringResource(id)

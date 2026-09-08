@@ -33,6 +33,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -85,7 +87,7 @@ fun AppPasswordGuideDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "شرح إنشاء كلمة مرور التطبيق",
+                            text = tr(com.example.R.string.ui_bb2ff3994b74),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -95,7 +97,7 @@ fun AppPasswordGuideDialog(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Filled.Close,
-                            contentDescription = "إغلاق",
+                            contentDescription = tr(com.example.R.string.ui_5bf826c5e57c),
                             tint = Color(0xFF94A3B8)
                         )
                     }
@@ -104,7 +106,7 @@ fun AppPasswordGuideDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "تتطلب Google استخدام «كلمة مرور تطبيق» مكونة من 16 حرفاً لإرسال الرسائل بأمان عبر بروتوكول SMTP دون مشاركة كلمة مرور حسابك الأصلية.",
+                    text = tr(com.example.R.string.ui_8cdb06e7f48d),
                     fontSize = 13.sp,
                     color = Color(0xFFCBD5E1),
                     lineHeight = 19.sp
@@ -115,32 +117,32 @@ fun AppPasswordGuideDialog(
                 // Steps list
                 StepGuideItem(
                     stepNumber = "1",
-                    title = "تفعيل التحقق بخطوتين",
-                    description = "تأكد من تفعيل (2-Step Verification) في حساب Google الخاص بك."
+                    title = tr(com.example.R.string.ui_ea946f46338f),
+                    description = tr(com.example.R.string.ui_d61c80873687)
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 StepGuideItem(
                     stepNumber = "2",
-                    title = "فتح صفحة كلمات مرور التطبيقات",
-                    description = "انتقل إلى صفحة App Passwords في أمان حساب Google."
+                    title = tr(com.example.R.string.ui_3087ba16c32a),
+                    description = tr(com.example.R.string.ui_59d2e2e7f625)
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 StepGuideItem(
                     stepNumber = "3",
-                    title = "إنشاء كلمة مرور جديدة",
-                    description = "اكتب اسم التطبيق (مثال: حماية الهاتف) واضغط على زر إنشاء (Create)."
+                    title = tr(com.example.R.string.ui_8cb38d56d41f),
+                    description = tr(com.example.R.string.ui_5a2394b1e83a)
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 StepGuideItem(
                     stepNumber = "4",
-                    title = "نسخ الرمز في التطبيق",
-                    description = "انسخ الرمز المكون من 16 حرفاً باللون الأصفر والصقه في حقل كلمة المرور بالتطبيق."
+                    title = tr(com.example.R.string.ui_320581e8d52d),
+                    description = tr(com.example.R.string.ui_2f8cefd8efca)
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -170,7 +172,7 @@ fun AppPasswordGuideDialog(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "الانتقال لصفحة كلمات مرور تطبيقات Google",
+                        text = tr(com.example.R.string.ui_f463cab7702c),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -187,7 +189,7 @@ fun AppPasswordGuideDialog(
                         contentColor = Color.Black
                     )
                 ) {
-                    Text("فهمت ذلك، العودة للإعدادات", fontWeight = FontWeight.Bold)
+                    Text(tr(com.example.R.string.ui_3d18064414f0), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -242,3 +244,7 @@ private fun StepGuideItem(
         }
     }
 }
+
+
+@androidx.compose.runtime.Composable
+private fun tr(@StringRes id: Int): String = stringResource(id)

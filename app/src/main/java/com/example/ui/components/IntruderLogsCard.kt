@@ -49,6 +49,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -110,7 +112,7 @@ fun IntruderLogsCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "سجل محاولات الاختراق (${logs.size})",
+                        text = stringResource(com.example.R.string.ui_logs_title, logs.size),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -124,7 +126,7 @@ fun IntruderLogsCard(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.DeleteOutline,
-                            contentDescription = "مسح السجل",
+                            contentDescription = tr(com.example.R.string.ui_a5967ab83e91),
                             tint = CrimsonAlert,
                             modifier = Modifier.size(20.dp)
                         )
@@ -158,13 +160,13 @@ fun IntruderLogsCard(
                         }
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "لا توجد محاولات فتح خاطئة مسجلة",
+                            text = tr(com.example.R.string.ui_183e19fda3bb),
                             color = Color.White,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "جهازك آمن ومحمي بالكامل",
+                            text = tr(com.example.R.string.ui_5723c036ad44),
                             color = Color(0xFF94A3B8),
                             fontSize = 12.sp
                         )
@@ -177,7 +179,7 @@ fun IntruderLogsCard(
                             log = log,
                             onPhotoClick = { path -> selectedPhotoPath = path },
                             onOpenMap = { lat, lng ->
-                                val geoUri = "geo:$lat,$lng?q=$lat,$lng(موقع محاولة فتح الهاتف)"
+                                val geoUri = "geo:$lat,$lng?q=$lat,$lng(${context.getString(com.example.R.string.ui_map_query_label)})"
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(geoUri))
                                 try {
                                     context.startActivity(intent)
@@ -213,7 +215,7 @@ fun IntruderLogsCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "صورة المتسلل الملتقطة",
+                            text = tr(com.example.R.string.ui_afd9a9fff8eb),
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                             fontSize = 15.sp
@@ -221,7 +223,7 @@ fun IntruderLogsCard(
                         IconButton(onClick = { selectedPhotoPath = null }) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
-                                contentDescription = "إغلاق",
+                                contentDescription = tr(com.example.R.string.ui_5bf826c5e57c),
                                 tint = Color.White
                             )
                         }
@@ -233,7 +235,7 @@ fun IntruderLogsCard(
                     if (file.exists()) {
                         AsyncImage(
                             model = file,
-                            contentDescription = "صورة المتسلل بالحجم الكامل",
+                            contentDescription = tr(com.example.R.string.ui_510c3629aa00),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(1f)
@@ -247,7 +249,7 @@ fun IntruderLogsCard(
                                 .fillMaxWidth()
                                 .height(200.dp)
                         ) {
-                            Text("الصورة غير موجودة على القرص", color = Color(0xFF94A3B8))
+                            Text(tr(com.example.R.string.ui_363ab0cc6367), color = Color(0xFF94A3B8))
                         }
                     }
 
@@ -259,7 +261,7 @@ fun IntruderLogsCard(
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = CyanAccent, contentColor = Color.Black)
                     ) {
-                        Text("إغلاق المعاينة", fontWeight = FontWeight.Bold)
+                        Text(tr(com.example.R.string.ui_03f6589bae7c), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -270,8 +272,8 @@ fun IntruderLogsCard(
     if (showConfirmDelete) {
         AlertDialog(
             onDismissRequest = { showConfirmDelete = false },
-            title = { Text("مسح سجل المتسللين", fontWeight = FontWeight.Bold) },
-            text = { Text("هل أنت متأكد من رغبتك في حذف جميع الصور والسجلات السابقة؟") },
+            title = { Text(tr(com.example.R.string.ui_5b81e2a486bd), fontWeight = FontWeight.Bold) },
+            text = { Text(tr(com.example.R.string.ui_41811f03072a)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -280,12 +282,12 @@ fun IntruderLogsCard(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = CrimsonAlert)
                 ) {
-                    Text("نعم، احذف الكل")
+                    Text(tr(com.example.R.string.ui_2ea780822000))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showConfirmDelete = false }) {
-                    Text("إلغاء", color = Color.White)
+                    Text(tr(com.example.R.string.ui_e776b0209b50), color = Color.White)
                 }
             },
             containerColor = Color(0xFF1E293B),
@@ -327,7 +329,7 @@ private fun IntruderLogItem(
                 ) {
                     AsyncImage(
                         model = File(log.photoPath!!),
-                        contentDescription = "صورة المتسلل",
+                        contentDescription = tr(com.example.R.string.ui_9a9fc6253cf9),
                         modifier = Modifier.matchParentSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -376,8 +378,7 @@ private fun IntruderLogItem(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                val isFinalFailure = log.statusMessage.contains("FAILED_FINAL") ||
-                    log.statusMessage.contains("فشل نهائي")
+                val isFinalFailure = log.statusMessage.contains("FAILED_FINAL")
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
@@ -406,9 +407,12 @@ private fun IntruderLogItem(
 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "الصورة: ${if (log.photoCaptured) "نجحت" else "فشلت"}؛ " +
-                        "الموقع: ${if (log.locationCaptured) "نجح" else "فشل"}؛ " +
-                        "البريد: ${if (log.emailSent) "نجح" else "لم ينجح"}",
+                    text = stringResource(
+                        com.example.R.string.ui_log_summary,
+                        stringResource(if (log.photoCaptured) com.example.R.string.ui_success else com.example.R.string.ui_failed),
+                        stringResource(if (log.locationCaptured) com.example.R.string.ui_status_success else com.example.R.string.ui_status_failed),
+                        stringResource(if (log.emailSent) com.example.R.string.ui_status_success else com.example.R.string.ui_status_not_sent)
+                    ),
                     fontSize = 10.sp,
                     color = Color(0xFF94A3B8),
                     maxLines = 2
@@ -432,7 +436,7 @@ private fun IntruderLogItem(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "عرض الموقع على الخريطة",
+                            text = tr(com.example.R.string.ui_fb8ebbb45452),
                             color = CyanAccent,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium
@@ -443,3 +447,7 @@ private fun IntruderLogItem(
         }
     }
 }
+
+
+@androidx.compose.runtime.Composable
+private fun tr(@StringRes id: Int): String = stringResource(id)

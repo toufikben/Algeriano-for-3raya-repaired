@@ -10,6 +10,8 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
+import android.content.res.Configuration
+import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -43,6 +45,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
@@ -53,6 +56,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,6 +77,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -107,6 +113,9 @@ import com.example.ui.theme.EmeraldActive
 import com.example.ui.theme.MyApplicationTheme
 import com.example.viewmodel.SecurityViewModel
 import com.example.data.SecurityPrefs
+import com.example.i18n.AppLanguage
+import com.example.i18n.LanguageStore
+import com.example.i18n.isRtl
 
 class MainActivity : ComponentActivity() {
 
@@ -117,20 +126,40 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         viewModel = SecurityViewModel(this)
+        val languageStore = LanguageStore(this)
+        applyLanguage(languageStore.get())
 
         setContent {
             MyApplicationTheme {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                var selectedLanguage by remember { mutableStateOf(languageStore.get()) }
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides if (selectedLanguage.isRtl()) LayoutDirection.Rtl else LayoutDirection.Ltr
+                ) {
                     AppPinGate(SecurityPrefs.getInstance(this@MainActivity)) {
                         SecurityMainScreen(
                             viewModel = viewModel,
                             onRequestAdmin = { requestDeviceAdmin() },
-                            onRequestBatteryExemption = { requestBatteryExemption() }
+                            onRequestBatteryExemption = { requestBatteryExemption() },
+                            language = selectedLanguage,
+                            onLanguageChanged = { language ->
+                                languageStore.set(language)
+                                applyLanguage(language)
+                                selectedLanguage = language
+                                recreate()
+                            }
                         )
                     }
                 }
             }
         }
+    }
+
+    private fun applyLanguage(language: AppLanguage) {
+        val locale = Locale.forLanguageTag(language.code)
+        Locale.setDefault(locale)
+        val configuration = Configuration(resources.configuration)
+        configuration.setLocale(locale)
+        resources.updateConfiguration(configuration, resources.displayMetrics)
     }
 
     private fun requestDeviceAdmin() {
@@ -141,12 +170,12 @@ class MainActivity : ComponentActivity() {
                 putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
                 putExtra(
                     DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    "صلاحية مدير الجهاز إلزامية لرصد محاولات إدخال كلمة المرور الخاطئة والتقاط صورة المتسلل."
+                    getString(com.example.R.string.ui_81f1f7a15d28)
                 )
             }
             startActivity(intent)
         } else {
-            Toast.makeText(this, "صلاحية مدير الجهاز مفعلة بالفعل", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(com.example.R.string.ui_98f5fc225503), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -162,7 +191,7 @@ class MainActivity : ComponentActivity() {
                     val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
                     startActivity(intent)
                 } catch (e2: Exception) {
-                    Toast.makeText(this, "يرجى استثناء التطبيق يدوياً من إعدادات البطارية", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, getString(com.example.R.string.ui_09e9d58c3f8a), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -174,7 +203,9 @@ class MainActivity : ComponentActivity() {
 fun SecurityMainScreen(
     viewModel: SecurityViewModel,
     onRequestAdmin: () -> Unit,
-    onRequestBatteryExemption: () -> Unit
+    onRequestBatteryExemption: () -> Unit,
+    language: AppLanguage,
+    onLanguageChanged: (AppLanguage) -> Unit
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
@@ -183,6 +214,7 @@ fun SecurityMainScreen(
     var showDeveloperInfo by remember { mutableStateOf(false) }
     var showAppPasswordGuide by remember { mutableStateOf(false) }
     var showPinManagement by remember { mutableStateOf(false) }
+    var showLanguagePicker by remember { mutableStateOf(false) }
 
     // Lifecycle observer to refresh statuses when returning from system settings
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -264,12 +296,22 @@ fun SecurityMainScreen(
                 },
                 actions = {
                     IconButton(
+                        onClick = { showLanguagePicker = true },
+                        modifier = Modifier.testTag("language_picker_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Language,
+                            contentDescription = tr(com.example.R.string.ui_9a6e57604b4d),
+                            tint = CyanAccent
+                        )
+                    }
+                    IconButton(
                         onClick = { showPinManagement = true },
                         modifier = Modifier.testTag("pin_management_button")
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Key,
-                            contentDescription = "تغيير PIN التطبيق",
+                            contentDescription = tr(com.example.R.string.ui_29cc79599c5c),
                             tint = Color.White
                         )
                     }
@@ -279,7 +321,7 @@ fun SecurityMainScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.HelpOutline,
-                            contentDescription = "دليل الإعداد",
+                            contentDescription = tr(com.example.R.string.ui_c2d7f7559f21),
                             tint = CyanAccent
                         )
                     }
@@ -289,7 +331,7 @@ fun SecurityMainScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Person,
-                            contentDescription = "معلومات المبرمج",
+                            contentDescription = tr(com.example.R.string.ui_cd24acb10110),
                             tint = Color.White
                         )
                     }
@@ -440,7 +482,7 @@ fun SecurityMainScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "معلومات عن المبرمج والتطبيق (v1.0.0)",
+                            text = tr(com.example.R.string.ui_9eb289360bce),
                             color = CyanAccent,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
@@ -468,6 +510,51 @@ fun SecurityMainScreen(
             onDismiss = { showPinManagement = false }
         )
     }
+    if (showLanguagePicker) {
+        LanguagePickerDialog(
+            language = language,
+            onLanguageChanged = {
+                onLanguageChanged(it)
+                showLanguagePicker = false
+            },
+            onDismiss = { showLanguagePicker = false }
+        )
+    }
+}
+
+@Composable
+private fun LanguagePickerDialog(
+    language: AppLanguage,
+    onLanguageChanged: (AppLanguage) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(tr(com.example.R.string.ui_de636443d0c9)) },
+        text = {
+            Column {
+                AppLanguage.entries.forEach { option ->
+                    TextButton(
+                        onClick = { onLanguageChanged(option) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = context.getString(option.displayNameRes),
+                            modifier = Modifier.fillMaxWidth(),
+                            color = if (option == language) CyanAccent else MaterialTheme.colorScheme.onSurface,
+                            fontWeight = if (option == language) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(tr(com.example.R.string.ui_5bf826c5e57c))
+            }
+        }
+    )
 }
 
 @Composable
@@ -489,7 +576,7 @@ fun SecurityHeroHeader(
         ) {
             AsyncImage(
                 model = R.drawable.security_hero_banner_1787338876086,
-                contentDescription = "غلاف أمان الهاتف",
+                contentDescription = tr(com.example.R.string.ui_51ae4e30735b),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -522,7 +609,7 @@ fun SecurityHeroHeader(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isTrackingEnabled) "نظام الحماية فعال ويراقب الجهاز" else "الحماية في وضع الاستعداد",
+                        text = if (isTrackingEnabled) tr(com.example.R.string.ui_6239de7ab740) else tr(com.example.R.string.ui_8ed3ffdd1ed5),
                         color = if (isTrackingEnabled) EmeraldActive else Color(0xFFEF4444),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
@@ -532,14 +619,14 @@ fun SecurityHeroHeader(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "رصد محاولات الفتح الفاشلة",
+                    text = tr(com.example.R.string.ui_12d1334739f6),
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    text = "التقاط صورة صامتة + تحديد موقع GPS + إرسال بريد فوري",
+                    text = tr(com.example.R.string.ui_b557180d4541),
                     color = Color(0xFFCBD5E1),
                     fontSize = 11.sp
                 )
@@ -582,13 +669,13 @@ fun AdminWarningBanner(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "صلاحية مدير الجهاز غير مفعلة",
+                        text = tr(com.example.R.string.ui_2dd35163a536),
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         fontSize = 13.sp
                     )
                     Text(
-                        text = "يجب تفعيلها ليتمكن النظام من رصد كلمات المرور الخاطئة.",
+                        text = tr(com.example.R.string.ui_24caf782e9fc),
                         color = Color(0xFFFDE68A),
                         fontSize = 11.sp
                     )
@@ -607,8 +694,12 @@ fun AdminWarningBanner(
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 modifier = Modifier.height(34.dp)
             ) {
-                Text("تفعيل الآن", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(tr(com.example.R.string.ui_c98273f24670), fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
+
+
+@androidx.compose.runtime.Composable
+private fun tr(@StringRes id: Int): String = stringResource(id)

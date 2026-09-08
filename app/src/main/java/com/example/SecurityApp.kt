@@ -1,15 +1,30 @@
 package com.example
 
+import com.example.R
+
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
+import com.example.i18n.LanguageStore
+import java.util.Locale
 
 class SecurityApp : Application() {
 
     companion object {
         const val CHANNEL_ID_SERVICE = "security_service_channel"
         const val CHANNEL_ID_ALERTS = "security_alerts_channel"
+    }
+
+    override fun attachBaseContext(base: Context) {
+        val language = LanguageStore(base).get()
+        val locale = Locale.forLanguageTag(language.code)
+        Locale.setDefault(locale)
+        val configuration = Configuration(base.resources.configuration)
+        configuration.setLocale(locale)
+        super.attachBaseContext(base.createConfigurationContext(configuration))
     }
 
     override fun onCreate() {
@@ -32,10 +47,10 @@ class SecurityApp : Application() {
 
             val alertsChannel = NotificationChannel(
                 CHANNEL_ID_ALERTS,
-                "تنبيهات رصد المتسللين",
+                getString(com.example.R.string.ui_ba80f4ab2a31),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "تنبيهات فورية عند اكتشاف محاولة فتح خاطئة"
+                description = getString(com.example.R.string.ui_3b035380cc10)
                 enableVibration(true)
                 setShowBadge(true)
             }

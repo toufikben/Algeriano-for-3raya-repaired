@@ -1,5 +1,8 @@
 package com.example.util
 
+import android.content.Context
+import com.example.R
+
 import java.io.File
 import java.util.Properties
 import javax.activation.DataHandler
@@ -24,6 +27,7 @@ object EmailSender {
     )
 
     fun sendSecurityAlert(
+        context: Context,
         senderEmail: String,
         appPassword: String,
         recipientEmail: String,
@@ -33,7 +37,7 @@ object EmailSender {
         eventId: String? = null
     ): SendResult {
         if (senderEmail.isBlank() || appPassword.isBlank()) {
-            return SendResult(false, "البريد الإلكتروني أو كلمة مرور التطبيق فارغة")
+            return SendResult(false, context.getString(R.string.ui_16b9f058a24f))
         }
 
         return try {
@@ -56,7 +60,7 @@ object EmailSender {
             })
 
             val message = MimeMessage(session).apply {
-                setFrom(InternetAddress(senderEmail.trim(), "نظام حماية الهاتف"))
+                setFrom(InternetAddress(senderEmail.trim(), context.getString(R.string.ui_6dc6e4eefce8)))
                 setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail.trim()))
                 setSubject(subject, "UTF-8")
                 eventId?.let {
@@ -97,10 +101,10 @@ object EmailSender {
             }
         } catch (e: AuthenticationFailedException) {
             System.err.println("EmailSender: SMTP authentication failed")
-            SendResult(false, "فشل التحقق من بيانات SMTP؛ راجع البريد وكلمة مرور التطبيق", retryable = false)
+            SendResult(false, context.getString(R.string.ui_464e2cc141b1), retryable = false)
         } catch (e: Exception) {
             System.err.println("EmailSender: SMTP send failed: ${e.javaClass.simpleName}")
-            SendResult(false, "تعذر الاتصال بخادم البريد؛ ستتم إعادة المحاولة إذا كان الخطأ مؤقتًا")
+            SendResult(false, context.getString(R.string.ui_ece94e33ec57))
         }
     }
 }
