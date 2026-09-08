@@ -82,7 +82,11 @@ class CameraForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        SecurityPrefs.getInstance(applicationContext).recoverStaleSecurityEvents()
+        val prefs = SecurityPrefs.getInstance(applicationContext)
+        prefs.recoverStaleSecurityEvents()
+        // Rebuild alarms when Android/OEM process cleanup removed them while
+        // the persisted protection countdown is still active.
+        CountdownScheduler.rescheduleFromPrefs(applicationContext)
         startBackgroundThread()
     }
 
@@ -772,6 +776,12 @@ class CameraForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        // A normal user stop clears countdownEnabled first. Therefore this
+        // only repairs scheduling after an unexpected service destruction.
+        val prefs = SecurityPrefs.getInstance(applicationContext)
+        if (prefs.isTrackingEnabled && prefs.countdownEnabled) {
+            CountdownScheduler.rescheduleFromPrefs(applicationContext)
+        }
         serviceScope.cancel()
         foregroundStarted = false
         super.onDestroy()
