@@ -16,7 +16,8 @@ enum class AppLanguage(val code: String, @StringRes val displayNameRes: Int) {
 }
 
 class LanguageStore(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val storageContext = context.applicationContext ?: context
+    private val prefs = storageContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun get(): AppLanguage = AppLanguage.fromCode(prefs.getString(KEY_LANGUAGE, AppLanguage.ARABIC.code))
 
