@@ -37,6 +37,7 @@ import com.example.data.SecurityPrefs
 import com.example.data.SecurityEventStatus
 import com.example.receiver.CountdownScheduler
 import com.example.util.EmailSender
+import com.example.worker.CaptureRetryWorker
 import com.example.worker.SecurityEventDistributor
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -82,7 +83,9 @@ class CameraForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        SecurityPrefs.getInstance(applicationContext).recoverStaleSecurityEvents()
+        val prefs = SecurityPrefs.getInstance(applicationContext)
+        prefs.recordCountdownDiagnostic("service", "created", "foreground_service_on_create")
+        prefs.recoverStaleSecurityEvents()
         startBackgroundThread()
     }
 
@@ -100,9 +103,24 @@ class CameraForegroundService : Service() {
 
         if (!foregroundStarted) {
             if (!promoteToForeground(buildForegroundNotification())) {
+                val prefs = SecurityPrefs.getInstance(applicationContext)
+                prefs.recordCountdownDiagnostic(
+                    "service",
+                    "failed",
+                    "promote_to_foreground_failed"
+                )
+                if (action == ACTION_COUNTDOWN_EXPIRED) {
+                    prefs.countdownCapturePending = true
+                    CaptureRetryWorker.enqueue(applicationContext, replaceExisting = true)
+                }
                 stopSelf(startId)
                 return START_NOT_STICKY
             }
+            SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+                "service",
+                "ready",
+                "foreground_service_started"
+            )
             foregroundStarted = true
         }
 
@@ -235,6 +253,7 @@ class CameraForegroundService : Service() {
             prefs.isTrackingEnabled
         if (autoRestartCountdown) {
             CountdownScheduler.start(applicationContext, prefs.countdownDurationMillis)
+            prefs.recordCountdownDiagnostic("capture", "success", "auto_restart_scheduled_before_capture")
             Log.d(TAG, "Countdown completed; next cycle scheduled before capture")
         }
 
@@ -409,9 +428,15 @@ class CameraForegroundService : Service() {
 
                 if (isCountdownCapture && !autoRestartCountdown) {
                     prefs.clearCountdown()
+                    prefs.recordCountdownDiagnostic("capture", "completed", "countdown_cleared_after_capture")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error in processIntruderCapture", e)
+                prefs.recordCountdownDiagnostic(
+                    "capture",
+                    "failed",
+                    "${e.javaClass.simpleName}:${e.message}"
+                )
                 if (!isTest && eventId != null) {
                     prefs.completeSecurityEvent(eventId, SecurityEventStatus.FAILED_FINAL)
                     if (!logSaved) {
@@ -773,6 +798,18 @@ class CameraForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        val prefs = SecurityPrefs.getInstance(applicationContext)
+        prefs.recordCountdownDiagnostic(
+            "service",
+            "destroyed",
+            "tracking=${prefs.isTrackingEnabled},countdown=${prefs.countdownEnabled},pending=${prefs.countdownCapturePending}"
+        )
+        // A normal user stop clears countdownEnabled first. This recovery path
+        // is therefore reserved for unexpected service destruction.
+        if (prefs.isTrackingEnabled && prefs.countdownEnabled) {
+            prefs.recordCountdownDiagnostic("reschedule", "requested", "service_destroyed")
+            CountdownScheduler.rescheduleFromPrefs(applicationContext)
+        }
         serviceScope.cancel()
         foregroundStarted = false
         super.onDestroy()

@@ -14,6 +14,7 @@ import android.util.Patterns
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.CountdownDiagnosticEvent
 import com.example.data.IntruderLog
 import com.example.data.SecurityPrefs
 import com.example.receiver.CountdownScheduler
@@ -46,7 +47,8 @@ data class SecurityUiState(
     val countdownEndTime: Long = 0L,
     val countdownDurationMillis: Long = 60 * 60 * 1000L,
     val countdownRemainingMillis: Long = 0L,
-    val countdownAutoRestart: Boolean = false
+    val countdownAutoRestart: Boolean = false,
+    val countdownDiagnostics: List<CountdownDiagnosticEvent> = emptyList()
 )
 
 class SecurityViewModel(private val context: Context) : ViewModel() {
@@ -63,7 +65,8 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             countdownEndTime = prefs.countdownEndTime,
             countdownDurationMillis = prefs.countdownDurationMillis,
             countdownRemainingMillis = remainingCountdownMillis(),
-            countdownAutoRestart = prefs.countdownAutoRestart
+            countdownAutoRestart = prefs.countdownAutoRestart,
+            countdownDiagnostics = prefs.getCountdownDiagnostics()
         )
     )
     val uiState: StateFlow<SecurityUiState> = _uiState.asStateFlow()
@@ -95,7 +98,8 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
                         countdownEnabled = prefs.countdownEnabled,
                         countdownEndTime = prefs.countdownEndTime,
                         countdownRemainingMillis = remainingCountdownMillis(),
-                        countdownAutoRestart = prefs.countdownAutoRestart
+                        countdownAutoRestart = prefs.countdownAutoRestart,
+                        countdownDiagnostics = prefs.getCountdownDiagnostics()
                     )
                 }
             }

@@ -194,6 +194,10 @@
     <string name="ui_7429493736f9">المحاولة متوقفة مؤقتاً</string>
     <string name="ui_f09f791e2ff8">حفظ PIN الجديد</string>
     <string name="ui_5c2d36070240">نسيت PIN؟</string>
+    <string name="ui_pin_try_again_seconds">حاول بعد %1$d ثانية</string>
+    <string name="ui_pin_checking">جارٍ التحقق…</string>
+    <string name="ui_pin_current_rule">PIN الحالي: من 6 إلى 8 أرقام</string>
+    <string name="ui_pin_new_rule">PIN الجديد: من 6 إلى 8 أرقام</string>
     <string name="ui_d4a1d92f7a68">نظام التتبع والحماية نَشِط</string>
     <string name="ui_edb2324aba4d">نظام التتبع والحماية مُتَوقّف</string>
     <string name="ui_3d9e78dd04a7">زر تشغيل وإيقاف الحماية</string>
@@ -242,4 +246,7 @@
     <string name="ui_unexpected_event">FAILED_FINAL: فشل غير متوقع أثناء معالجة الحدث: %1$s</string>
     <string name="ui_recovered_events">تمت استعادة %1$d منبهات معلقة؛ راجع سجل المحاولات</string>
     <string name="ui_map_query_label">موقع محاولة فتح الهاتف</string>
+    <string name="ui_countdown_diagnostics_title">تشخيص مؤقت الحماية</string>
+    <string name="ui_countdown_diagnostics_description">آخر الأحداث المسجلة للمؤقت ومحاولات تشغيل الخدمة. لا يتم تسجيل PIN أو بيانات البريد.</string>
+    <string name="ui_countdown_diagnostics_empty">لا توجد أحداث مسجلة بعد.</string>
 </resources>

@@ -194,6 +194,10 @@
     <string name="ui_7429493736f9">Attempts are temporarily suspended</string>
     <string name="ui_f09f791e2ff8">Save new PIN</string>
     <string name="ui_5c2d36070240">Forgot PIN?</string>
+    <string name="ui_pin_try_again_seconds">Try again in %1$d seconds</string>
+    <string name="ui_pin_checking">Checking…</string>
+    <string name="ui_pin_current_rule">Current PIN: 6 to 8 digits</string>
+    <string name="ui_pin_new_rule">New PIN: 6 to 8 digits</string>
     <string name="ui_d4a1d92f7a68">Tracking and protection system is active</string>
     <string name="ui_edb2324aba4d">Tracking and protection system is inactive</string>
     <string name="ui_3d9e78dd04a7">Protection on/off button</string>
@@ -242,4 +246,7 @@
     <string name="ui_unexpected_event">FAILED_FINAL: Unexpected error while processing the event: %1$s</string>
     <string name="ui_recovered_events">%1$d pending alerts recovered; review the attempt log</string>
     <string name="ui_map_query_label">Phone unlock attempt location</string>
+    <string name="ui_countdown_diagnostics_title">Protection timer diagnostics</string>
+    <string name="ui_countdown_diagnostics_description">Recent timer and service-start events. PIN and email data are not recorded.</string>
+    <string name="ui_countdown_diagnostics_empty">No diagnostic events recorded yet.</string>
 </resources>

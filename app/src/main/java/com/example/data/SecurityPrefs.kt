@@ -56,6 +56,13 @@ data class SecurityEvent(
     val locationTimestamp: Long? = null
 )
 
+data class CountdownDiagnosticEvent(
+    val timestamp: Long,
+    val stage: String,
+    val status: String,
+    val detail: String
+)
+
 class SecurityPrefs private constructor(private val context: Context) {
 
     private val prefs: SharedPreferences =
@@ -94,12 +101,14 @@ class SecurityPrefs private constructor(private val context: Context) {
         private const val KEY_APP_PIN_HASH = "key_app_pin_hash"
         private const val KEY_PIN_FAILED_ATTEMPTS = "key_pin_failed_attempts"
         private const val KEY_PIN_BLOCKED_UNTIL = "key_pin_blocked_until"
+        private const val KEY_COUNTDOWN_DIAGNOSTICS_JSON = "key_countdown_diagnostics_json"
         private const val KEY_SECURITY_EVENTS_JSON = "key_security_events_json"
         private const val KEYSTORE_ALIAS = "intruder_security_credentials"
         private const val ENCRYPTED_PREFIX = "v1:"
         private const val GCM_TAG_LENGTH_BITS = 128
         private const val GCM_IV_LENGTH_BYTES = 12
         private const val MAX_SECURITY_EVENTS = 100
+        private const val MAX_COUNTDOWN_DIAGNOSTICS = 40
         private const val EVENT_LEASE_TIMEOUT_MILLIS = 2 * 60 * 1000L
         private const val MAX_EVENT_RECOVERY_ATTEMPTS = 2
         private const val MAX_SEND_ATTEMPTS = 3
@@ -514,8 +523,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     }
 
     fun verifyAppPin(pin: String): Boolean {
-        // Legacy four- or five-digit PINs remain verifiable so users can migrate.
-        if (!hasAppPin || !pin.matches(Regex("\\d{4,$PIN_MAX_LENGTH}"))) return false
+        if (!hasAppPin || !pin.matches(Regex("\\d{$PIN_MIN_LENGTH,$PIN_MAX_LENGTH}"))) return false
         return try {
             val salt = Base64.decode(prefs.getString(KEY_APP_PIN_SALT, ""), Base64.NO_WRAP)
             val expected = Base64.decode(prefs.getString(KEY_APP_PIN_HASH, ""), Base64.NO_WRAP)
@@ -602,6 +610,55 @@ class SecurityPrefs private constructor(private val context: Context) {
             .putInt(KEY_COUNTDOWN_RETRY_COUNT, 0)
             .putString(KEY_COUNTDOWN_EVENT_ID, "")
             .apply()
+    }
+
+    @Synchronized
+    fun recordCountdownDiagnostic(
+        stage: String,
+        status: String,
+        detail: String,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
+        val current = getCountdownDiagnostics().toMutableList()
+        current.add(
+            CountdownDiagnosticEvent(
+                timestamp = timestamp,
+                stage = stage.take(48),
+                status = status.take(24),
+                detail = detail.take(240)
+            )
+        )
+        val array = JSONArray()
+        current.takeLast(MAX_COUNTDOWN_DIAGNOSTICS).forEach { event ->
+            array.put(
+                JSONObject()
+                    .put("timestamp", event.timestamp)
+                    .put("stage", event.stage)
+                    .put("status", event.status)
+                    .put("detail", event.detail)
+            )
+        }
+        prefs.edit().putString(KEY_COUNTDOWN_DIAGNOSTICS_JSON, array.toString()).apply()
+    }
+
+    fun getCountdownDiagnostics(): List<CountdownDiagnosticEvent> {
+        val json = prefs.getString(KEY_COUNTDOWN_DIAGNOSTICS_JSON, "[]") ?: "[]"
+        return try {
+            val array = JSONArray(json)
+            (0 until array.length()).mapNotNull { index ->
+                array.optJSONObject(index)?.let { item ->
+                    CountdownDiagnosticEvent(
+                        timestamp = item.optLong("timestamp", 0L),
+                        stage = item.optString("stage"),
+                        status = item.optString("status"),
+                        detail = item.optString("detail")
+                    )
+                }
+            }.takeLast(MAX_COUNTDOWN_DIAGNOSTICS).reversed()
+        } catch (e: Exception) {
+            Log.e("SecurityPrefs", "Unable to read countdown diagnostics", e)
+            emptyList()
+        }
     }
 
     @Synchronized

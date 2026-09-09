@@ -100,6 +100,7 @@ import com.example.ui.components.AppPasswordGuideDialog
 import com.example.ui.components.AppPinGate
 import com.example.ui.components.CredentialsCard
 import com.example.ui.components.CountdownCard
+import com.example.ui.components.CountdownDiagnosticsCard
 import com.example.ui.components.DeveloperInfoDialog
 import com.example.ui.components.IntruderLogsCard
 import com.example.ui.components.PermissionsStatusCard
@@ -410,6 +411,10 @@ fun SecurityMainScreen(
                     onCancel = viewModel::cancelCountdown,
                     onAutoRestartChange = viewModel::setCountdownAutoRestart
                 )
+            }
+
+            item {
+                CountdownDiagnosticsCard(events = uiState.countdownDiagnostics)
             }
 
             // 3. Email & App Password Configuration

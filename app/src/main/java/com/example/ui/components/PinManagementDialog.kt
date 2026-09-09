@@ -42,13 +42,17 @@ fun PinManagementDialog(
     var showResetWarning by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var blockedUntil by remember { mutableLongStateOf(prefs.getPinBlockedUntil()) }
+    var isProcessing by remember { mutableStateOf(false) }
+    var blockedRemainingSeconds by remember { mutableLongStateOf(0L) }
     val isBlocked = blockedUntil > System.currentTimeMillis()
 
-    LaunchedEffect(isBlocked) {
-        if (isBlocked) {
-            kotlinx.coroutines.delay((blockedUntil - System.currentTimeMillis()).coerceAtLeast(1L))
-            blockedUntil = 0L
+    LaunchedEffect(blockedUntil) {
+        while (blockedUntil > System.currentTimeMillis()) {
+            blockedRemainingSeconds = ((blockedUntil - System.currentTimeMillis() + 999L) / 1000L).coerceAtLeast(0L)
+            kotlinx.coroutines.delay(250L)
         }
+        blockedRemainingSeconds = 0L
+        if (blockedUntil != 0L) blockedUntil = 0L
     }
 
     if (showResetWarning) {
@@ -83,36 +87,60 @@ fun PinManagementDialog(
         text = {
             Column {
                 PinField(currentPin, { currentPin = it; error = null }, context.getString(com.example.R.string.ui_c8522f0305c3))
+                Text(
+                    context.getString(com.example.R.string.ui_pin_current_rule),
+                    color = androidx.compose.ui.graphics.Color(0xFF94A3B8),
+                    fontSize = 11.sp
+                )
                 Spacer(Modifier.height(8.dp))
                 PinField(newPin, { newPin = it; error = null }, context.getString(com.example.R.string.ui_58306554a47d))
+                Text(
+                    context.getString(com.example.R.string.ui_pin_new_rule),
+                    color = androidx.compose.ui.graphics.Color(0xFF94A3B8),
+                    fontSize = 11.sp
+                )
                 Spacer(Modifier.height(8.dp))
                 PinField(confirmation, { confirmation = it; error = null }, context.getString(com.example.R.string.ui_bcf33093a0fa))
                 error?.let {
                     Spacer(Modifier.height(8.dp))
                     Text(it, color = androidx.compose.ui.graphics.Color(0xFFDC2626), fontSize = 12.sp)
                 }
+                if (isBlocked) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        context.getString(com.example.R.string.ui_pin_try_again_seconds, blockedRemainingSeconds),
+                        color = androidx.compose.ui.graphics.Color(0xFFFCD34D),
+                        fontSize = 12.sp
+                    )
+                }
             }
         },
         confirmButton = {
-                Button(enabled = !isBlocked, onClick = {
-                    when {
-                    !currentPin.matches(Regex("\\d{4,8}")) -> error = context.getString(com.example.R.string.ui_e18e557fd5d6)
-                    !newPin.matches(Regex("\\d{6,8}")) -> error = context.getString(com.example.R.string.ui_8dd08f154388)
-                    newPin != confirmation -> error = context.getString(com.example.R.string.ui_8d10332dd5a1)
-                    !prefs.changeAppPin(currentPin, newPin) -> {
-                        error = context.getString(com.example.R.string.ui_35c16c4d4620)
-                        val persistedBlockedUntil = prefs.registerPinFailure()
-                        if (persistedBlockedUntil > 0L) {
-                            blockedUntil = persistedBlockedUntil
-                            error = context.getString(com.example.R.string.ui_9816b280d8ee)
+                Button(enabled = !isBlocked && !isProcessing, onClick = {
+                    if (isBlocked || isProcessing) return@Button
+                    isProcessing = true
+                    try {
+                        when {
+                        !currentPin.matches(Regex("\\d{6,8}")) -> error = context.getString(com.example.R.string.ui_e18e557fd5d6)
+                        !newPin.matches(Regex("\\d{6,8}")) -> error = context.getString(com.example.R.string.ui_8dd08f154388)
+                        newPin != confirmation -> error = context.getString(com.example.R.string.ui_8d10332dd5a1)
+                        !prefs.changeAppPin(currentPin, newPin) -> {
+                            error = context.getString(com.example.R.string.ui_35c16c4d4620)
+                            val persistedBlockedUntil = prefs.registerPinFailure()
+                            if (persistedBlockedUntil > 0L) {
+                                blockedUntil = persistedBlockedUntil
+                                error = context.getString(com.example.R.string.ui_9816b280d8ee)
+                            }
+                        }
+                        else -> {
+                            prefs.resetPinFailures()
+                            onDismiss()
                         }
                     }
-                    else -> {
-                        prefs.resetPinFailures()
-                        onDismiss()
+                    } finally {
+                        isProcessing = false
                     }
-                }
-            }) { Text(if (isBlocked) context.getString(com.example.R.string.ui_7429493736f9) else context.getString(com.example.R.string.ui_f09f791e2ff8)) }
+                }) { Text(if (isProcessing) context.getString(com.example.R.string.ui_pin_checking) else if (isBlocked) context.getString(com.example.R.string.ui_7429493736f9) else context.getString(com.example.R.string.ui_f09f791e2ff8)) }
         },
         dismissButton = {
             TextButton(onClick = { showResetWarning = true }) { Text(context.getString(com.example.R.string.ui_5c2d36070240)) }

@@ -194,6 +194,10 @@
     <string name="ui_7429493736f9">Les tentatives sont temporairement suspendues</string>
     <string name="ui_f09f791e2ff8">Enregistrer le nouveau PIN</string>
     <string name="ui_5c2d36070240">Vous avez oublié le PIN ?</string>
+    <string name="ui_pin_try_again_seconds">Réessayez dans %1$d secondes</string>
+    <string name="ui_pin_checking">Vérification…</string>
+    <string name="ui_pin_current_rule">PIN actuel : 6 à 8 chiffres</string>
+    <string name="ui_pin_new_rule">Nouveau PIN : 6 à 8 chiffres</string>
     <string name="ui_d4a1d92f7a68">Le système de suivi et de protection est actif</string>
     <string name="ui_edb2324aba4d">Le système de suivi et de protection est inactif</string>
     <string name="ui_3d9e78dd04a7">Bouton d’activation/désactivation de la protection</string>
@@ -242,4 +246,7 @@
     <string name="ui_unexpected_event">FAILED_FINAL : erreur inattendue lors du traitement de l’événement : %1$s</string>
     <string name="ui_recovered_events">%1$d alertes en attente récupérées ; consultez le journal des tentatives</string>
     <string name="ui_map_query_label">Lieu de la tentative de déverrouillage</string>
+    <string name="ui_countdown_diagnostics_title">Diagnostic du minuteur de protection</string>
+    <string name="ui_countdown_diagnostics_description">Derniers événements du minuteur et du démarrage du service. Le PIN et les e-mails ne sont pas enregistrés.</string>
+    <string name="ui_countdown_diagnostics_empty">Aucun événement de diagnostic enregistré.</string>
 </resources>
