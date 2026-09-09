@@ -32,8 +32,8 @@
     <string name="ui_ba80f4ab2a31">Intruder detection alerts</string>
     <string name="ui_3b035380cc10">Immediate alerts when a failed unlock attempt is detected</string>
     <string name="ui_158bb9c625fb">Protection timer is about to expire</string>
-    <string name="ui_0b183fd63f65">Less than 10 minutes remaining. Tap to extend the timer if you're using the phone.</string>
-    <string name="ui_226510ac7ba6">Less than 10 minutes remain before the protection timer expires. If you're using the phone, tap Extend timer.</string>
+    <string name="ui_0b183fd63f65">Less than 10 minutes remaining. Tap to extend the timer if you’re using the phone.</string>
+    <string name="ui_226510ac7ba6">Less than 10 minutes remain before the protection timer expires. If you’re using the phone, tap Extend timer.</string>
     <string name="ui_771471017b22">Extend timer</string>
     <string name="ui_c0ae8d5ba4fa">Location unavailable (Unable to determine GPS coordinates or permission disabled)</string>
     <string name="ui_dd886e527edc">Photo: captured successfully</string>
@@ -71,7 +71,7 @@
     <string name="ui_de636443d0c9">Choose the app language</string>
     <string name="ui_5b12a079c302">Language saved</string>
     <string name="ui_bb2ff3994b74">How to create an App Password</string>
-    <string name="ui_8cdb06e7f48d">Google requires using a 16-character 'App Password' to send messages securely via SMTP without sharing your main account password.</string>
+    <string name="ui_8cdb06e7f48d">Google requires using a 16-character ’App Password’ to send messages securely via SMTP without sharing your main account password.</string>
     <string name="ui_ea946f46338f">Enable 2-Step Verification</string>
     <string name="ui_d61c80873687">Make sure (2-Step Verification) is enabled on your Google account.</string>
     <string name="ui_3087ba16c32a">Open the App Passwords page</string>
@@ -79,7 +79,7 @@
     <string name="ui_8cb38d56d41f">Create a new App Password</string>
     <string name="ui_5a2394b1e83a">Enter an app name (for example, Phone Protection), then select Create.</string>
     <string name="ui_320581e8d52d">Copy the code into the app</string>
-    <string name="ui_2f8cefd8efca">Copy the 16-character yellow code and paste it into the app's password field.</string>
+    <string name="ui_2f8cefd8efca">Copy the 16-character yellow code and paste it into the app’s password field.</string>
     <string name="ui_f463cab7702c">Go to the Google App Passwords page</string>
     <string name="ui_3d18064414f0">Got it, return to settings</string>
     <string name="ui_3f4f0bd01aa1">Create an App PIN</string>
@@ -137,20 +137,20 @@
     <string name="ui_4194b339b21b">Phone protection and intruder detector app</string>
     <string name="ui_ed3327bec79e">Version: 1.0.0 (latest version)</string>
     <string name="ui_235dd7facf19">Fix for Device Admin permission (Android 13 and above):</string>
-    <string name="ui_c03a47548c0a">If you see the message «App was denied access» when trying to enable Device Admin:\n</string>
-    <string name="ui_08eecf918378">1. Open your phone's Settings (Settings) ⬅️ Apps (Apps).\n</string>
-    <string name="ui_a422b69cf6d3">2. Find the Phone Fortress app and open it.\n</string>
-    <string name="ui_9eaaf66601aa">3. Tap the three-dot menu (⋮) at the top of the screen.\n</string>
-    <string name="ui_a0e4d77de101">4. Select «Allow restricted settings» (Allow restricted settings).\n</string>
+    <string name="ui_c03a47548c0a">If you see the message «App was denied access» when trying to enable Device Admin:&#10;</string>
+    <string name="ui_08eecf918378">1. Open your phone’s Settings (Settings) ⬅️ Apps (Apps).&#10;</string>
+    <string name="ui_a422b69cf6d3">2. Find the Phone Fortress app and open it.&#10;</string>
+    <string name="ui_9eaaf66601aa">3. Tap the three-dot menu (⋮) at the top of the screen.&#10;</string>
+    <string name="ui_a0e4d77de101">4. Select «Allow restricted settings» (Allow restricted settings).&#10;</string>
     <string name="ui_e120a7c1a8a3">5. Enter your phone lock code to confirm, then return to the app and enable the permission successfully.</string>
     <string name="ui_531637fc771f">Direct link to the app info page</string>
     <string name="ui_5bc19849e76b">Development and programming:</string>
     <string name="ui_bd6640986dcd">Inquiry about the Phone protection app</string>
     <string name="ui_76a2cd4d2144">Email:</string>
     <string name="ui_ba976163ccd7">Dedication:</string>
-    <string name="ui_adff3d413ae6">To my mother, my father (may Allah have mercy on him), my siblings, my friends, and all Muslims united on the path of the righteous predecessors.\n\nFrom a school dropout.. We ask Allah for piety, sincerity, and monotheism.. May Allah reward you with goodness.</string>
+    <string name="ui_adff3d413ae6">To my mother, my father (may Allah have mercy on him), my siblings, my friends, and all Muslims united on the path of the righteous predecessors.&#10;&#10;From a school dropout.. We ask Allah for piety, sincerity, and monotheism.. May Allah reward you with goodness.</string>
     <string name="ui_622bb7698201">🛡️ Built-in security features:</string>
-    <string name="ui_df898b5c62e7">• Monitor incorrect screen-unlock attempts (PIN, pattern, password) via Device Admin.\n• Take a silent photo with the front camera immediately upon failure.\n• Capture GPS coordinates precisely and attach a Google Maps link.\n• Send an instant email to your account via secure direct SMTP.\n• Auto-start after device reboot (Boot Completed).</string>
+    <string name="ui_df898b5c62e7">• Monitor incorrect screen-unlock attempts (PIN, pattern, password) via Device Admin.&#10;• Take a silent photo with the front camera immediately upon failure.&#10;• Capture GPS coordinates precisely and attach a Google Maps link.&#10;• Send an instant email to your account via secure direct SMTP.&#10;• Auto-start after device reboot (Boot Completed).</string>
     <string name="ui_a5967ab83e91">Clear log</string>
     <string name="ui_183e19fda3bb">No incorrect unlock attempts recorded</string>
     <string name="ui_5723c036ad44">Your device is safe and fully protected</string>
@@ -172,7 +172,7 @@
     <string name="ui_1a29890587a9">To silently capture a photo of the intruder when an incorrect attempt occurs</string>
     <string name="ui_430a7406cef8">Grant camera permission</string>
     <string name="ui_b8c5dbe74ade">Location (GPS) permission</string>
-    <string name="ui_243fddfb6e4b">To determine the phone's location and send its coordinates via a map</string>
+    <string name="ui_243fddfb6e4b">To determine the phone’s location and send its coordinates via a map</string>
     <string name="ui_dfaa5f777154">Grant location permission</string>
     <string name="ui_859c512e412c">Notifications permission</string>
     <string name="ui_5f7985e90dd3">To show a warning when the timer is about to expire and the result of the send</string>
@@ -213,7 +213,7 @@
     <string name="ui_15711b903550">Security status</string>
     <string name="ui_625d96b54288">Protection is enabled and all prerequisites are ready.</string>
     <string name="ui_f8395ec2db0e">Protection is currently disabled.</string>
-    <string name="ui_location_coordinates">Latitude: %1$s\nLongitude: %2$s\nGoogle Maps link:\nhttps://www.google.com/maps?q=%1$s,%2$s</string>
+    <string name="ui_location_coordinates">Latitude: %1$s&#10;Longitude: %2$s&#10;Google Maps link:&#10;https://www.google.com/maps?q=%1$s,%2$s</string>
     <string name="ui_test_subject">🔔 Intruder detector test: Test successful (%1$s)</string>
     <string name="ui_alert_subject">🚨 Urgent security alert: Unauthorized phone unlock attempt! (%1$s)</string>
     <string name="ui_test_body">This is a test message from Phone Fortress to confirm your email, camera, and location settings.</string>

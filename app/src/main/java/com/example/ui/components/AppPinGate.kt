@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalContext
 import com.example.data.SecurityPrefs
 
 @Composable
@@ -44,6 +45,7 @@ fun AppPinGate(
     var error by remember { mutableStateOf<String?>(null) }
     var blockedUntil by remember { mutableLongStateOf(prefs.getPinBlockedUntil()) }
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
 
     DisposableEffect(lifecycleOwner, unlocked) {
         val observer = LifecycleEventObserver { _, event ->
@@ -72,19 +74,19 @@ fun AppPinGate(
 
     AlertDialog(
         onDismissRequest = {},
-        title = { Text(if (setupMode) tr(com.example.R.string.ui_3f4f0bd01aa1) else tr(com.example.R.string.ui_0c3b6d325b25)) },
+        title = { Text(if (setupMode) context.getString(com.example.R.string.ui_3f4f0bd01aa1) else context.getString(com.example.R.string.ui_0c3b6d325b25)) },
         text = {
             Column {
                 Text(
-                    if (setupMode) tr(com.example.R.string.ui_eff2c7b02500)
-                    else tr(com.example.R.string.ui_70e664aca488),
+                    if (setupMode) context.getString(com.example.R.string.ui_eff2c7b02500)
+                    else context.getString(com.example.R.string.ui_70e664aca488),
                     fontSize = 13.sp
                 )
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = pin,
                     onValueChange = { if (it.length <= 8 && it.all(Char::isDigit)) { pin = it; error = null } },
-                    label = { Text(if (setupMode) tr(com.example.R.string.ui_58ec1cac3ac2) else "PIN") },
+                    label = { Text(if (setupMode) context.getString(com.example.R.string.ui_58ec1cac3ac2) else "PIN") },
                     singleLine = true,
                     enabled = !isBlocked,
                     visualTransformation = PasswordVisualTransformation(),
@@ -96,7 +98,7 @@ fun AppPinGate(
                     OutlinedTextField(
                         value = confirmation,
                         onValueChange = { if (it.length <= 8 && it.all(Char::isDigit)) { confirmation = it; error = null } },
-                        label = { Text(tr(com.example.R.string.ui_e0b00366c09e)) },
+                        label = { Text(context.getString(com.example.R.string.ui_e0b00366c09e)) },
                         singleLine = true,
                         enabled = !isBlocked,
                         visualTransformation = PasswordVisualTransformation(),
@@ -116,9 +118,9 @@ fun AppPinGate(
                     if (isBlocked) return@Button
                     if (setupMode) {
                         when {
-                            !pin.matches(Regex("\\d{6,8}")) -> error = tr(com.example.R.string.ui_8dd08f154388)
-                            pin != confirmation -> error = tr(com.example.R.string.ui_1b0457e70ea6)
-                            !prefs.setAppPin(pin) -> error = tr(com.example.R.string.ui_b385e9df7099)
+                            !pin.matches(Regex("\\d{6,8}")) -> error = context.getString(com.example.R.string.ui_8dd08f154388)
+                            pin != confirmation -> error = context.getString(com.example.R.string.ui_1b0457e70ea6)
+                            !prefs.setAppPin(pin) -> error = context.getString(com.example.R.string.ui_b385e9df7099)
                             else -> {
                                 prefs.resetPinFailures()
                                 unlocked = true
@@ -132,24 +134,20 @@ fun AppPinGate(
                         prefs.resetPinFailures()
                     } else {
                         pin = ""
-                        error = tr(com.example.R.string.ui_c33e81392abf)
+                        error = context.getString(com.example.R.string.ui_c33e81392abf)
                         val persistedBlockedUntil = prefs.registerPinFailure()
                         if (persistedBlockedUntil > 0L) {
                             blockedUntil = persistedBlockedUntil
-                            error = tr(com.example.R.string.ui_9816b280d8ee)
+                            error = context.getString(com.example.R.string.ui_9816b280d8ee)
                         }
                     }
                 },
                 enabled = !isBlocked,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF06B6D4), contentColor = Color.Black)
-            ) { Text(if (setupMode) tr(com.example.R.string.ui_fcaa74c95b28) else tr(com.example.R.string.ui_4eeff8b9245e)) }
+            ) { Text(if (setupMode) context.getString(com.example.R.string.ui_fcaa74c95b28) else context.getString(com.example.R.string.ui_4eeff8b9245e)) }
         },
         dismissButton = {
-            TextButton(onClick = {}, enabled = false) { Text(tr(com.example.R.string.ui_4debd9959fb5)) }
+            TextButton(onClick = {}, enabled = false) { Text(context.getString(com.example.R.string.ui_4debd9959fb5)) }
         }
     )
 }
-
-
-@androidx.compose.runtime.Composable
-private fun tr(@StringRes id: Int): String = stringResource(id)

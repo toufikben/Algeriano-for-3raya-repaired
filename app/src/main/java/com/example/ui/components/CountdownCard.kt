@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
@@ -74,6 +75,7 @@ fun CountdownCard(
     var showCustomDuration by remember { mutableStateOf(false) }
     var customHours by remember { mutableStateOf("24") }
     var customError by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
     var selectedDuration by remember(selectedDurationMillis) {
         mutableStateOf(
             countdownOptions.firstOrNull { it.durationMillis == selectedDurationMillis }
@@ -92,10 +94,10 @@ fun CountdownCard(
                 Icon(Icons.Filled.Alarm, contentDescription = null, tint = if (countdownEnabled) EmeraldActive else CyanAccent)
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(tr(com.example.R.string.ui_5a089be6b9c0), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(context.getString(com.example.R.string.ui_5a089be6b9c0), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        if (countdownEnabled) tr(com.example.R.string.ui_37132290bfa1)
-                        else tr(com.example.R.string.ui_0f01b098d5a1),
+                        if (countdownEnabled) context.getString(com.example.R.string.ui_37132290bfa1)
+                        else context.getString(com.example.R.string.ui_0f01b098d5a1),
                         color = Color(0xFFCBD5E1), fontSize = 11.sp
                     )
                 }
@@ -104,7 +106,7 @@ fun CountdownCard(
             Spacer(Modifier.height(14.dp))
 
             if (countdownEnabled) {
-                Text(tr(com.example.R.string.ui_60086bba9b5d), color = Color(0xFF94A3B8), fontSize = 12.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(context.getString(com.example.R.string.ui_60086bba9b5d), color = Color(0xFF94A3B8), fontSize = 12.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
                 Text(
                     formatRemaining(remainingMillis),
                     color = EmeraldActive,
@@ -122,7 +124,7 @@ fun CountdownCard(
                 ) {
                     Icon(Icons.Filled.Refresh, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text(tr(com.example.R.string.ui_8a18596c3a0d))
+                    Text(context.getString(com.example.R.string.ui_8a18596c3a0d))
                 }
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
@@ -132,22 +134,22 @@ fun CountdownCard(
                     border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.7f)),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFCA5A5))
                 ) {
-                    Icon(Icons.Filled.StopCircle, contentDescription = tr(com.example.R.string.ui_9e6d341a7ea9))
+                    Icon(Icons.Filled.StopCircle, contentDescription = context.getString(com.example.R.string.ui_9e6d341a7ea9))
                     Spacer(Modifier.width(8.dp))
-                    Text(tr(com.example.R.string.ui_9e6d341a7ea9))
+                    Text(context.getString(com.example.R.string.ui_9e6d341a7ea9))
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(tr(com.example.R.string.ui_89f8b035060e), color = Color.White, fontSize = 14.sp)
-                        Text(tr(com.example.R.string.ui_ee49b62ef84e), color = Color(0xFF94A3B8), fontSize = 11.sp)
+                        Text(context.getString(com.example.R.string.ui_89f8b035060e), color = Color.White, fontSize = 14.sp)
+                        Text(context.getString(com.example.R.string.ui_ee49b62ef84e), color = Color(0xFF94A3B8), fontSize = 11.sp)
                     }
                     Switch(checked = autoRestart, onCheckedChange = onAutoRestartChange)
                 }
             } else {
-                Text(tr(com.example.R.string.ui_85026a616144), color = Color(0xFFCBD5E1), fontSize = 12.sp)
+                Text(context.getString(com.example.R.string.ui_85026a616144), color = Color(0xFFCBD5E1), fontSize = 12.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                     countdownOptions.take(3).forEach { option ->
@@ -179,7 +181,7 @@ fun CountdownCard(
                 ) {
                     Icon(Icons.Filled.Refresh, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text(if (isTrackingEnabled) tr(com.example.R.string.ui_9d3a40b56ea6) else tr(com.example.R.string.ui_cdf0ecf21726))
+                    Text(if (isTrackingEnabled) context.getString(com.example.R.string.ui_9d3a40b56ea6) else context.getString(com.example.R.string.ui_cdf0ecf21726))
                 }
             }
         }
@@ -188,25 +190,25 @@ fun CountdownCard(
     if (showStopConfirmation) {
         AlertDialog(
             onDismissRequest = { showStopConfirmation = false },
-            title = { Text(tr(com.example.R.string.ui_8c4545c26d9d)) },
-            text = { Text(tr(com.example.R.string.ui_4b8656bfac1f)) },
+            title = { Text(context.getString(com.example.R.string.ui_8c4545c26d9d)) },
+            text = { Text(context.getString(com.example.R.string.ui_4b8656bfac1f)) },
             confirmButton = {
                 TextButton(onClick = {
                     showStopConfirmation = false
                     onCancel()
-                }) { Text(tr(com.example.R.string.ui_0a390cb74aa0)) }
+                }) { Text(context.getString(com.example.R.string.ui_0a390cb74aa0)) }
             },
-            dismissButton = { TextButton(onClick = { showStopConfirmation = false }) { Text(tr(com.example.R.string.ui_e776b0209b50)) } }
+            dismissButton = { TextButton(onClick = { showStopConfirmation = false }) { Text(context.getString(com.example.R.string.ui_e776b0209b50)) } }
         )
     }
 
     if (showCustomDuration) {
         AlertDialog(
             onDismissRequest = { showCustomDuration = false },
-            title = { Text(tr(com.example.R.string.ui_1a9007b55b43)) },
+            title = { Text(context.getString(com.example.R.string.ui_1a9007b55b43)) },
             text = {
                 Column {
-                    Text(tr(com.example.R.string.ui_86a10ffe1dd0), fontSize = 12.sp)
+                    Text(context.getString(com.example.R.string.ui_86a10ffe1dd0), fontSize = 12.sp)
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = customHours,
@@ -216,7 +218,7 @@ fun CountdownCard(
                                 customError = null
                             }
                         },
-                        label = { Text(tr(com.example.R.string.ui_7bdedbad7418)) },
+                        label = { Text(context.getString(com.example.R.string.ui_7bdedbad7418)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
@@ -228,14 +230,14 @@ fun CountdownCard(
                 TextButton(onClick = {
                     val hours = customHours.toLongOrNull()
                     if (hours == null || hours !in 1..720) {
-                        customError = tr(com.example.R.string.ui_a872f64d489c)
+                        customError = context.getString(com.example.R.string.ui_a872f64d489c)
                     } else {
                         showCustomDuration = false
                         onStart(hours * 60 * 60 * 1000L)
                     }
-                }) { Text(tr(com.example.R.string.ui_ab74e1258f2a)) }
+                }) { Text(context.getString(com.example.R.string.ui_ab74e1258f2a)) }
             },
-            dismissButton = { TextButton(onClick = { showCustomDuration = false }) { Text(tr(com.example.R.string.ui_e776b0209b50)) } }
+            dismissButton = { TextButton(onClick = { showCustomDuration = false }) { Text(context.getString(com.example.R.string.ui_e776b0209b50)) } }
         )
     }
 }
@@ -265,7 +267,3 @@ private fun formatRemaining(millis: Long): String {
         else -> "%02d:%02d:%02d".format(hours, minutes, (millis / 1000L) % 60)
     }
 }
-
-
-@androidx.compose.runtime.Composable
-private fun tr(@StringRes id: Int): String = stringResource(id)

@@ -137,20 +137,20 @@
     <string name="ui_4194b339b21b">تطبيق حماية الهاتف وكاشف المتسللين</string>
     <string name="ui_ed3327bec79e">الإصدار: 1.0.0 (أحدث إصدار)</string>
     <string name="ui_235dd7facf19">حل مشكلة صلاحية مدير الجهاز (أندرويد 13 فما فوق):</string>
-    <string name="ui_c03a47548c0a">إذا ظهرت لك رسالة «App was denied access» عند محاولة تفعيل مدير الجهاز:\n</string>
-    <string name="ui_08eecf918378">1. افتح إعدادات هاتفك (Settings) ⬅️ التطبيقات (Apps).\n</string>
-    <string name="ui_a422b69cf6d3">2. ابحث عن تطبيق Phone Fortress وافتحه.\n</string>
-    <string name="ui_9eaaf66601aa">3. اضغط على قائمة الثلاث نقاط (⋮) في أعلى الشاشة.\n</string>
-    <string name="ui_a0e4d77de101">4. اختر «السماح بالإعدادات المقيدة» (Allow restricted settings).\n</string>
+    <string name="ui_c03a47548c0a">إذا ظهرت لك رسالة «App was denied access» عند محاولة تفعيل مدير الجهاز:&#10;</string>
+    <string name="ui_08eecf918378">1. افتح إعدادات هاتفك (Settings) ⬅️ التطبيقات (Apps).&#10;</string>
+    <string name="ui_a422b69cf6d3">2. ابحث عن تطبيق Phone Fortress وافتحه.&#10;</string>
+    <string name="ui_9eaaf66601aa">3. اضغط على قائمة الثلاث نقاط (⋮) في أعلى الشاشة.&#10;</string>
+    <string name="ui_a0e4d77de101">4. اختر «السماح بالإعدادات المقيدة» (Allow restricted settings).&#10;</string>
     <string name="ui_e120a7c1a8a3">5. أدخل رمز قفل هاتفك للتأكيد، ثم ارجع للتطبيق وفعل الصلاحية بنجاح.</string>
     <string name="ui_531637fc771f">الانتقال المباشر لصفحة معلومات التطبيق</string>
     <string name="ui_5bc19849e76b">تطوير وبرمجة:</string>
     <string name="ui_bd6640986dcd">استفسار حول تطبيق حماية الهاتف</string>
     <string name="ui_76a2cd4d2144">البريد الإلكتروني:</string>
     <string name="ui_ba976163ccd7">إهـداء:</string>
-    <string name="ui_adff3d413ae6">إلى أمي، وأبي رحمه الله، وإخوتي، وأصدقائي، وكل المسلمين الموحدين على نهج السلف الصالح.\n\nمن متسرب مدرسي.. نسأل الله التقوى والإخلاص والتوحيد.. جزاكم الله خيراً.</string>
+    <string name="ui_adff3d413ae6">إلى أمي، وأبي رحمه الله، وإخوتي، وأصدقائي، وكل المسلمين الموحدين على نهج السلف الصالح.&#10;&#10;من متسرب مدرسي.. نسأل الله التقوى والإخلاص والتوحيد.. جزاكم الله خيراً.</string>
     <string name="ui_622bb7698201">🛡️ ميزات الأمان المدمجة:</string>
-    <string name="ui_df898b5c62e7">• مراقبة محاولات فتح الشاشة الخاطئة (رمز PIN، نمط، كلمة سر) عبر Device Admin.\n• التقاط صورة صامتة من الكاميرا الأمامية فور الفشل.\n• تحديد إحداثيات GPS بدقة وإرفاق رابط خرائط جوجل.\n• إرسال بريد فوري إلى حسابك عبر SMTP آمن ومباشر.\n• بدء التشغيل التلقائي بعد إعادة تشغيل الجهاز (Boot Completed).</string>
+    <string name="ui_df898b5c62e7">• مراقبة محاولات فتح الشاشة الخاطئة (رمز PIN، نمط، كلمة سر) عبر Device Admin.&#10;• التقاط صورة صامتة من الكاميرا الأمامية فور الفشل.&#10;• تحديد إحداثيات GPS بدقة وإرفاق رابط خرائط جوجل.&#10;• إرسال بريد فوري إلى حسابك عبر SMTP آمن ومباشر.&#10;• بدء التشغيل التلقائي بعد إعادة تشغيل الجهاز (Boot Completed).</string>
     <string name="ui_a5967ab83e91">مسح السجل</string>
     <string name="ui_183e19fda3bb">لا توجد محاولات فتح خاطئة مسجلة</string>
     <string name="ui_5723c036ad44">جهازك آمن ومحمي بالكامل</string>
@@ -213,7 +213,7 @@
     <string name="ui_15711b903550">الحالة الأمنية</string>
     <string name="ui_625d96b54288">الحماية مفعلة وجميع المتطلبات الأساسية جاهزة.</string>
     <string name="ui_f8395ec2db0e">الحماية متوقفة حالياً.</string>
-    <string name="ui_location_coordinates">خط العرض (Latitude): %1$s\nخط الطول (Longitude): %2$s\nرابط خرائط جوجل:\nhttps://www.google.com/maps?q=%1$s,%2$s</string>
+    <string name="ui_location_coordinates">خط العرض (Latitude): %1$s&#10;خط الطول (Longitude): %2$s&#10;رابط خرائط جوجل:&#10;https://www.google.com/maps?q=%1$s,%2$s</string>
     <string name="ui_test_subject">🔔 اختبار كاشف المتسللين: نجاح التجربة (%1$s)</string>
     <string name="ui_alert_subject">🚨 تحذير أمني عاجل: محاولة فتح هاتف غير مصرح بها! (%1$s)</string>
     <string name="ui_test_body">هذه رسالة اختبارية من تطبيق حماية الهاتف لتأكيد صحة إعدادات البريد الإلكتروني والكاميرا والموقع.</string>

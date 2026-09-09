@@ -98,7 +98,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = tr(com.example.R.string.ui_bde567ded26b),
+                            text = context.getString(com.example.R.string.ui_bde567ded26b),
                             modifier = Modifier.weight(1f),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
@@ -109,7 +109,7 @@ fun DeveloperInfoDialog(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Filled.Close,
-                            contentDescription = tr(com.example.R.string.ui_5bf826c5e57c),
+                            contentDescription = context.getString(com.example.R.string.ui_5bf826c5e57c),
                             tint = Color(0xFF94A3B8)
                         )
                     }
@@ -148,7 +148,7 @@ fun DeveloperInfoDialog(
                 )
 
                 Text(
-                    text = tr(com.example.R.string.ui_4194b339b21b),
+                    text = context.getString(com.example.R.string.ui_4194b339b21b),
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp,
                     color = Color(0xFF94A3B8),
@@ -158,7 +158,7 @@ fun DeveloperInfoDialog(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = tr(com.example.R.string.ui_ed3327bec79e),
+                    text = context.getString(com.example.R.string.ui_ed3327bec79e),
                     fontSize = 12.sp,
                     color = EmeraldActive,
                     fontWeight = FontWeight.Medium
@@ -184,7 +184,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = tr(com.example.R.string.ui_235dd7facf19),
+                            text = context.getString(com.example.R.string.ui_235dd7facf19),
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFEF3C7),
                             fontSize = 13.sp
@@ -194,12 +194,12 @@ fun DeveloperInfoDialog(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = tr(com.example.R.string.ui_c03a47548c0a) +
-                                tr(com.example.R.string.ui_08eecf918378) +
-                                tr(com.example.R.string.ui_a422b69cf6d3) +
-                                tr(com.example.R.string.ui_9eaaf66601aa) +
-                                tr(com.example.R.string.ui_a0e4d77de101) +
-                                tr(com.example.R.string.ui_e120a7c1a8a3),
+                        text = context.getString(com.example.R.string.ui_c03a47548c0a) +
+                                context.getString(com.example.R.string.ui_08eecf918378) +
+                                context.getString(com.example.R.string.ui_a422b69cf6d3) +
+                                context.getString(com.example.R.string.ui_9eaaf66601aa) +
+                                context.getString(com.example.R.string.ui_a0e4d77de101) +
+                                context.getString(com.example.R.string.ui_e120a7c1a8a3),
                         color = Color(0xFFFDE68A),
                         fontSize = 12.sp,
                         lineHeight = 18.sp
@@ -226,7 +226,7 @@ fun DeveloperInfoDialog(
                         )
                     ) {
                         Text(
-                            text = tr(com.example.R.string.ui_531637fc771f),
+                            text = context.getString(com.example.R.string.ui_531637fc771f),
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
@@ -252,7 +252,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = tr(com.example.R.string.ui_5bc19849e76b),
+                            text = context.getString(com.example.R.string.ui_5bc19849e76b),
                             modifier = Modifier.weight(1f),
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFE2E8F0),
@@ -275,7 +275,7 @@ fun DeveloperInfoDialog(
                             .clickable {
                                 val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
                                     data = Uri.parse("mailto:$devEmail")
-                                    putExtra(Intent.EXTRA_SUBJECT, tr(com.example.R.string.ui_bd6640986dcd))
+                                    putExtra(Intent.EXTRA_SUBJECT, context.getString(com.example.R.string.ui_bd6640986dcd))
                                 }
                                 try {
                                     context.startActivity(emailIntent)
@@ -292,7 +292,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = tr(com.example.R.string.ui_76a2cd4d2144),
+                            text = context.getString(com.example.R.string.ui_76a2cd4d2144),
                             modifier = Modifier.weight(1f),
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFE2E8F0),
@@ -330,7 +330,7 @@ fun DeveloperInfoDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = tr(com.example.R.string.ui_ba976163ccd7),
+                            text = context.getString(com.example.R.string.ui_ba976163ccd7),
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF6EE7B7),
                             fontSize = 14.sp
@@ -340,7 +340,7 @@ fun DeveloperInfoDialog(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = tr(com.example.R.string.ui_adff3d413ae6),
+                        text = context.getString(com.example.R.string.ui_adff3d413ae6),
                         color = Color(0xFFE6FFFA),
                         fontSize = 12.5.sp,
                         lineHeight = 20.sp,
@@ -359,14 +359,14 @@ fun DeveloperInfoDialog(
                         .padding(14.dp)
                 ) {
                     Text(
-                        text = tr(com.example.R.string.ui_622bb7698201),
+                        text = context.getString(com.example.R.string.ui_622bb7698201),
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = tr(com.example.R.string.ui_df898b5c62e7),
+                        text = context.getString(com.example.R.string.ui_df898b5c62e7),
                         color = Color(0xFFCBD5E1),
                         fontSize = 12.sp,
                         lineHeight = 18.sp
@@ -384,13 +384,9 @@ fun DeveloperInfoDialog(
                         contentColor = Color.Black
                     )
                 ) {
-                    Text(tr(com.example.R.string.ui_5bf826c5e57c), fontWeight = FontWeight.Bold)
+                    Text(context.getString(com.example.R.string.ui_5bf826c5e57c), fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
-
-
-@androidx.compose.runtime.Composable
-private fun tr(@StringRes id: Int): String = stringResource(id)
