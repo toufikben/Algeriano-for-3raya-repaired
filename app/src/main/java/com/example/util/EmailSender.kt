@@ -47,6 +47,7 @@ object EmailSender {
                 put("mail.smtp.host", "smtp.gmail.com")
                 put("mail.smtp.port", "587")
                 put("mail.smtp.auth", "true")
+                put("mail.smtp.auth.mechanisms", "LOGIN PLAIN")
                 put("mail.smtp.starttls.enable", "true")
                 // Opportunistic STARTTLS alone can be stripped by a network
                 // downgrade. Require TLS to actually be negotiated and verify
@@ -55,6 +56,7 @@ object EmailSender {
                 put("mail.smtp.starttls.required", "true")
                 put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3")
                 put("mail.smtp.ssl.checkserveridentity", "true")
+                put("mail.smtp.ssl.trust", "smtp.gmail.com")
                 put("mail.smtp.connectiontimeout", "15000")
                 put("mail.smtp.timeout", "15000")
             }

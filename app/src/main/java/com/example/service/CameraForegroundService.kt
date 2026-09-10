@@ -25,6 +25,7 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
+import android.util.Size
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -580,9 +581,19 @@ class CameraForegroundService : Service() {
         var outputFile: File? = null
         val captureCompleted = kotlinx.coroutines.CompletableDeferred<File?>()
 
-        val width = 640
-        val height = 480
-        val reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 2)
+        val outputSize = try {
+            val characteristics = cameraManager.getCameraCharacteristics(frontCameraId)
+            val sizes = characteristics.get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP
+            )?.getOutputSizes(ImageFormat.JPEG).orEmpty()
+            sizes.minByOrNull { size ->
+                kotlin.math.abs(size.width * size.height - 640 * 480)
+            } ?: Size(640, 480)
+        } catch (e: Exception) {
+            Log.w(TAG, "Unable to query supported JPEG sizes; using fallback", e)
+            Size(640, 480)
+        }
+        val reader = ImageReader.newInstance(outputSize.width, outputSize.height, ImageFormat.JPEG, 2)
         imageReader = reader
 
         reader.setOnImageAvailableListener({ ir ->
@@ -627,7 +638,10 @@ class CameraForegroundService : Service() {
                         val captureBuilder = camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE).apply {
                             addTarget(reader.surface)
                             set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO)
-                            set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+                            set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
+                            set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_AUTO)
+                            set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+                            set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
                         }
 
                         camera.createCaptureSession(
@@ -635,7 +649,21 @@ class CameraForegroundService : Service() {
                             object : CameraCaptureSession.StateCallback() {
                                 override fun onConfigured(session: CameraCaptureSession) {
                                     try {
-                                        session.capture(captureBuilder.build(), null, backgroundHandler)
+                                        // Give AE/AWB/AF a short preview window. Capturing
+                                        // immediately after open can produce an overexposed
+                                        // or completely white JPEG on some front cameras.
+                                        session.setRepeatingRequest(captureBuilder.build(), null, backgroundHandler)
+                                        backgroundHandler?.postDelayed({
+                                            if (!captureCompleted.isCompleted) {
+                                                runCatching {
+                                                    session.capture(captureBuilder.build(), null, backgroundHandler)
+                                                }.onFailure { error ->
+                                                    Log.e(TAG, "Delayed still capture failed", error)
+                                                    if (!captureCompleted.isCompleted) captureCompleted.complete(null)
+                                                    closeCamera()
+                                                }
+                                            }
+                                        }, 350L)
                                     } catch (e: CameraAccessException) {
                                         Log.e(TAG, "Capture failed", e)
                                         if (!captureCompleted.isCompleted) {
