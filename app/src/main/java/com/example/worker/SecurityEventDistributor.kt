@@ -62,6 +62,34 @@ object SecurityEventDistributor {
             .forEach { enqueue(context, it.id) }
     }
 
+    /** Dispatch durable events from a visible Activity instead of relying on a
+     * background Worker to start a camera foreground service on Android 14+. */
+    fun dispatchPendingFromVisibleContext(context: Context) {
+        val appContext = context.applicationContext
+        val prefs = SecurityPrefs.getInstance(appContext)
+        prefs.getPendingSecurityEvents().forEach { event ->
+            val countdownEvent = prefs.countdownCapturePending &&
+                prefs.countdownEventId == event.id
+            val intent = Intent(appContext, CameraForegroundService::class.java).apply {
+                action = if (countdownEvent) {
+                    CameraForegroundService.ACTION_COUNTDOWN_EXPIRED
+                } else {
+                    CameraForegroundService.ACTION_CAPTURE_AND_SEND
+                }
+                putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, event.id)
+            }
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    ContextCompat.startForegroundService(appContext, intent)
+                } else {
+                    appContext.startService(intent)
+                }
+            } catch (_: Exception) {
+                enqueue(appContext, event.id)
+            }
+        }
+    }
+
     fun scheduleRecovery(context: Context) {
         val request = OneTimeWorkRequestBuilder<SecurityEventRecoveryWorker>()
             .setInitialDelay(RECOVERY_DELAY_MINUTES, TimeUnit.MINUTES)

@@ -79,7 +79,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
                 it.copy(bannerMessage = context.getString(com.example.R.string.ui_recovered_events, recoveredEvents))
             }
         }
-        SecurityEventDistributor.enqueuePending(context)
+        SecurityEventDistributor.dispatchPendingFromVisibleContext(context)
         viewModelScope.launch {
             prefs.trackingEnabledFlow.collect { enabled ->
                 _uiState.update { it.copy(isTrackingEnabled = enabled) }
@@ -110,6 +110,12 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
     private fun remainingCountdownMillis(): Long {
         if (!prefs.countdownEnabled) return 0L
         return (prefs.countdownEndTime - System.currentTimeMillis()).coerceAtLeast(0L)
+    }
+
+    fun resumeProtectionFromVisibleActivity() {
+        if (!prefs.isTrackingEnabled) return
+        CountdownScheduler.rescheduleFromPrefs(context)
+        SecurityEventDistributor.dispatchPendingFromVisibleContext(context)
     }
 
     fun onEmailChange(newEmail: String) {
@@ -156,33 +162,12 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         }
         _uiState.update { it.copy(isTrackingEnabled = enabled) }
 
-        val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
-            action = if (enabled) CameraForegroundService.ACTION_START_MONITORING else CameraForegroundService.ACTION_STOP_MONITORING
-        }
-
-        try {
-            if (enabled) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent)
-                } else {
-                    context.startService(serviceIntent)
-                }
-            } else {
-                // Deliver the explicit stop action so the service can remove
-                // its foreground and alert notifications before stopping.
-                context.startService(serviceIntent)
-            }
-        } catch (e: Exception) {
-            val message = when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                    e is ForegroundServiceStartNotAllowedException ->
-                    context.getString(com.example.R.string.ui_66c3afea06a2)
-                e is SecurityException ->
-                    context.getString(com.example.R.string.ui_e2e69f0a016c)
-                else -> context.getString(com.example.R.string.ui_91d96b8d9ec3)
-            }
-            _uiState.update { it.copy(bannerMessage = message, isTrackingEnabled = false) }
-            prefs.isTrackingEnabled = false
+        if (enabled) {
+            // The camera service is event-driven; it starts only for a real
+            // capture or an explicit test from a visible user action.
+            SecurityEventDistributor.dispatchPendingFromVisibleContext(context)
+        } else {
+            context.stopService(Intent(context, CameraForegroundService::class.java))
         }
     }
 

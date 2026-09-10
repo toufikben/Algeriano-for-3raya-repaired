@@ -346,7 +346,10 @@ class SecurityPrefs private constructor(private val context: Context) {
     ) {
         updateSecurityEventsInRoom { events ->
             events.map {
-                if (it.id == id && it.status == SecurityEventStatus.IN_PROGRESS) {
+                if (it.id == id && SecurityEventStateMachine.canTransition(
+                        it.status,
+                        SecurityEventStatus.SEND_PENDING
+                    )) {
                     it.copy(
                         status = SecurityEventStatus.SEND_PENDING,
                         updatedAt = System.currentTimeMillis(),
@@ -365,7 +368,10 @@ class SecurityPrefs private constructor(private val context: Context) {
         var retry = false
         updateSecurityEventsInRoom { events ->
             events.map {
-                if (it.id == id && it.status == SecurityEventStatus.SEND_PENDING) {
+                if (it.id == id && it.status in setOf(
+                        SecurityEventStatus.SEND_PENDING,
+                        SecurityEventStatus.FAILED_RETRYABLE
+                    )) {
                     val attempts = it.sendAttempts + 1
                     retry = attempts < MAX_SEND_ATTEMPTS
                     it.copy(

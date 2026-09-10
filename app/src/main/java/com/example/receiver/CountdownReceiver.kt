@@ -151,6 +151,9 @@ object CountdownScheduler {
         if (prefs.countdownCapturePending || prefs.countdownEndTime <= System.currentTimeMillis()) {
             prefs.recordCountdownDiagnostic("reschedule", "retry", "expired_or_capture_pending")
             prefs.countdownCapturePending = true
+            if (prefs.countdownEventId.isBlank()) {
+                prefs.countdownEventId = prefs.enqueueSecurityEvent().id
+            }
             CaptureRetryWorker.enqueue(context)
         } else {
             prefs.recordCountdownDiagnostic("reschedule", "requested", "active_countdown")

@@ -155,6 +155,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::viewModel.isInitialized) {
+            viewModel.resumeProtectionFromVisibleActivity()
+        }
+    }
+
     private fun applyLanguage(language: AppLanguage) {
         val locale = Locale.forLanguageTag(language.code)
         Locale.setDefault(locale)

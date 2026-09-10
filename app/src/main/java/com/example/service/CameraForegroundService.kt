@@ -101,6 +101,14 @@ class CameraForegroundService : Service() {
             return START_NOT_STICKY
         }
 
+        // Protection is event-driven. Do not keep an idle camera foreground
+        // service alive; Android 14 may stop or reject that pattern.
+        if (action == ACTION_START_MONITORING) {
+            Log.d(TAG, "Ignoring idle monitoring request; captures are event-driven")
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
+
         if (!foregroundStarted) {
             if (!promoteToForeground(buildForegroundNotification())) {
                 val prefs = SecurityPrefs.getInstance(applicationContext)
@@ -133,14 +141,7 @@ class CameraForegroundService : Service() {
             ACTION_START_MONITORING -> Unit
         }
 
-        // Ask Android to recreate the service after a system-initiated kill
-        // while protection is enabled. Explicit user stop above remains
-        // START_NOT_STICKY and therefore is not resurrected.
-        return if (SecurityPrefs.getInstance(applicationContext).isTrackingEnabled) {
-            START_STICKY
-        } else {
-            START_NOT_STICKY
-        }
+        return START_NOT_STICKY
     }
 
     private fun promoteToForeground(notification: Notification): Boolean {
@@ -222,12 +223,20 @@ class CameraForegroundService : Service() {
         eventId: String? = null
     ) {
         val prefs = SecurityPrefs.getInstance(applicationContext)
+        if (!isTest && eventId.isNullOrBlank()) {
+            Log.e(TAG, "Ignoring capture request without a security event id")
+            if (isCountdownCapture) {
+                prefs.countdownCapturePending = true
+                CaptureRetryWorker.enqueue(applicationContext, replaceExisting = true)
+            }
+            return
+        }
         val existingEvent = eventId?.let { prefs.getSecurityEvent(it) }
         val sendOnly = !isTest && existingEvent?.status in setOf(
             SecurityEventStatus.SEND_PENDING,
             SecurityEventStatus.FAILED_RETRYABLE
         ) && !existingEvent?.photoPath.isNullOrBlank()
-        if (!isTest && eventId != null && !sendOnly && !prefs.claimSecurityEvent(eventId)) {
+        if (!isTest && !eventId.isNullOrBlank() && !sendOnly && !prefs.claimSecurityEvent(eventId)) {
             Log.w(TAG, "Ignoring duplicate or already-processed security event: $eventId")
             return
         }
@@ -240,7 +249,7 @@ class CameraForegroundService : Service() {
             if (!isTest && eventId != null) {
                 serviceScope.launch {
                     while (captureInProgress.get()) kotlinx.coroutines.delay(250L)
-                    processIntruderCapture(isTest = false, isCountdownCapture = false, eventId = eventId)
+                    processIntruderCapture(isTest = false, isCountdownCapture = isCountdownCapture, eventId = eventId)
                 }
             }
             return
@@ -251,6 +260,7 @@ class CameraForegroundService : Service() {
         val autoRestartCountdown = isCountdownCapture &&
             prefs.countdownAutoRestart &&
             prefs.isTrackingEnabled
+        val capturedCountdownEndTime = if (isCountdownCapture) prefs.countdownEndTime else 0L
         if (autoRestartCountdown) {
             CountdownScheduler.start(applicationContext, prefs.countdownDurationMillis)
             prefs.recordCountdownDiagnostic("capture", "success", "auto_restart_scheduled_before_capture")
@@ -426,7 +436,9 @@ class CameraForegroundService : Service() {
                     locationAvailable = location != null
                 )
 
-                if (isCountdownCapture && !autoRestartCountdown) {
+                if (isCountdownCapture && !autoRestartCountdown &&
+                    prefs.countdownEndTime == capturedCountdownEndTime
+                ) {
                     prefs.clearCountdown()
                     prefs.recordCountdownDiagnostic("capture", "completed", "countdown_cleared_after_capture")
                 }
@@ -477,8 +489,7 @@ class CameraForegroundService : Service() {
     }
 
     private fun isServicePersistent(): Boolean {
-        val prefs = SecurityPrefs.getInstance(applicationContext)
-        return prefs.isTrackingEnabled
+        return false
     }
 
     private suspend fun captureImageSilently(): File? = withContext(Dispatchers.IO) {

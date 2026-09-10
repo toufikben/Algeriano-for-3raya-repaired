@@ -23,6 +23,9 @@ class CaptureRetryWorker(
             prefs.recordCountdownDiagnostic("worker", "ignored", "countdown_not_pending")
             return Result.success()
         }
+        if (prefs.countdownEventId.isBlank()) {
+            prefs.countdownEventId = prefs.enqueueSecurityEvent().id
+        }
         prefs.countdownRetryCount += 1
         prefs.recordCountdownDiagnostic("worker", "attempt", "count=${prefs.countdownRetryCount}")
 

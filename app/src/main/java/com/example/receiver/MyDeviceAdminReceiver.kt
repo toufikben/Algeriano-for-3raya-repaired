@@ -19,6 +19,12 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
             return
         }
 
+        val failedAttempts = prefs.registerFailedUnlockAttempt()
+        if (failedAttempts < prefs.failedThreshold) {
+            Log.d("DeviceAdminReceiver", "Failed unlock recorded ($failedAttempts/${prefs.failedThreshold})")
+            return
+        }
+
         // Every callback becomes an independent event. The active foreground
         // service serializes concurrent captures and the durable queue handles
         // events that cannot be processed immediately.
@@ -43,7 +49,6 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         // created for the preceding failed attempt; capture/email may still
         // be processing asynchronously.
         prefs.resetFailedUnlockAttempts(cancelPendingEvents = false)
-        com.example.receiver.CountdownScheduler.cancel(context)
         Log.d("DeviceAdminReceiver", "Password succeeded; consecutive failed attempts reset")
     }
 

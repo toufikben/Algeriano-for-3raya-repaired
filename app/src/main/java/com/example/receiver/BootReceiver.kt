@@ -37,19 +37,7 @@ class BootReceiver : BroadcastReceiver() {
                     return
                 }
                 SecurityEventDistributor.enqueuePending(context)
-                Log.d("BootReceiver", "Tracking is enabled, starting monitoring service")
-                val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
-                    this.action = CameraForegroundService.ACTION_START_MONITORING
-                }
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        context.startForegroundService(serviceIntent)
-                    } else {
-                        context.startService(serviceIntent)
-                    }
-                } catch (e: Exception) {
-                    Log.e("BootReceiver", "Could not start service on boot", e)
-                }
+                Log.d("BootReceiver", "Pending events will resume from a visible app session")
             } else {
                 SecurityEventDistributor.enqueuePending(context)
             }
