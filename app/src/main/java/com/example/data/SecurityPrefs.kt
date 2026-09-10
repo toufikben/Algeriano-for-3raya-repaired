@@ -254,8 +254,8 @@ class SecurityPrefs private constructor(private val context: Context) {
         set(value) = prefs.edit().putString(KEY_LAST_ATTEMPT_LOCATION, value).apply()
 
     var failedThreshold: Int
-        get() = prefs.getInt(KEY_THRESHOLD, 3).coerceAtLeast(3)
-        set(value) = prefs.edit().putInt(KEY_THRESHOLD, value.coerceAtLeast(3)).apply()
+        get() = prefs.getInt(KEY_THRESHOLD, 1).coerceAtLeast(1)
+        set(value) = prefs.edit().putInt(KEY_THRESHOLD, value.coerceAtLeast(1)).apply()
 
 
     /**
