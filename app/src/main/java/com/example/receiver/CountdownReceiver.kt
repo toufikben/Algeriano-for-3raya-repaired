@@ -134,6 +134,19 @@ object CountdownScheduler {
         context.getSystemService(NotificationManager::class.java)?.cancel(WARNING_NOTIFICATION_ID)
         prefs.recordCountdownDiagnostic("schedule", "requested", "duration_ms=$safeDuration")
         scheduleAlarms(context, prefs.countdownEndTime)
+        runCatching {
+            val armIntent = Intent(context, CameraForegroundService::class.java).apply {
+                action = CameraForegroundService.ACTION_ARM_COUNTDOWN
+            }
+            ContextCompat.startForegroundService(context, armIntent)
+            prefs.recordCountdownDiagnostic("service_arm", "requested", "pre_armed_countdown_service")
+        }.onFailure { error ->
+            // The exact alarm remains the recovery path if Android rejects the
+            // visible-context foreground-service start.
+            prefs.recordCountdownDiagnostic(
+                "service_arm", "failed", "${error.javaClass.simpleName}:${error.message}"
+            )
+        }
     }
 
     fun cancel(context: Context) {
@@ -144,6 +157,7 @@ object CountdownScheduler {
         context.getSystemService(NotificationManager::class.java)?.cancel(WARNING_NOTIFICATION_ID)
         CaptureRetryWorker.cancel(context)
         SecurityPrefs.getInstance(context).clearCountdown()
+        context.stopService(Intent(context, CameraForegroundService::class.java))
     }
 
     fun rescheduleFromPrefs(context: Context) {

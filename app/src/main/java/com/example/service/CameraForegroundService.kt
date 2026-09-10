@@ -52,6 +52,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -68,6 +69,7 @@ class CameraForegroundService : Service() {
         const val ACTION_CAPTURE_AND_SEND = "com.example.action.CAPTURE_AND_SEND"
         const val ACTION_SEND_PENDING = "com.example.action.SEND_PENDING"
         const val ACTION_COUNTDOWN_EXPIRED = "com.example.action.COUNTDOWN_EXPIRED"
+        const val ACTION_ARM_COUNTDOWN = "com.example.action.ARM_COUNTDOWN"
         const val ACTION_START_MONITORING = "com.example.action.START_MONITORING"
         const val ACTION_TEST_CAPTURE = "com.example.action.TEST_CAPTURE"
         const val ACTION_STOP_MONITORING = "com.example.action.STOP_MONITORING"
@@ -85,6 +87,7 @@ class CameraForegroundService : Service() {
     private var backgroundHandler: Handler? = null
     private var foregroundStarted = false
     private var foregroundNeedsCamera = true
+    private var countdownArmJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -113,6 +116,19 @@ class CameraForegroundService : Service() {
             Log.d(TAG, "Ignoring idle monitoring request; captures are event-driven")
             stopSelf(startId)
             return START_NOT_STICKY
+        }
+
+        if (action == ACTION_ARM_COUNTDOWN) {
+            if (!foregroundStarted && !promoteToForeground(buildForegroundNotification())) {
+                SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+                    "service", "failed", "countdown_arm_foreground_failed"
+                )
+                stopSelf(startId)
+                return START_NOT_STICKY
+            }
+            foregroundStarted = true
+            armCountdownCapture()
+            return START_STICKY
         }
 
         if (!foregroundStarted) {
@@ -548,6 +564,24 @@ class CameraForegroundService : Service() {
                     stopSelf()
                 }
             }
+        }
+    }
+
+    private fun armCountdownCapture() {
+        countdownArmJob?.cancel()
+        val prefs = SecurityPrefs.getInstance(applicationContext)
+        val remaining = (prefs.countdownEndTime - System.currentTimeMillis()).coerceAtLeast(0L)
+        prefs.recordCountdownDiagnostic("service", "armed", "countdown_remaining_ms=$remaining")
+        countdownArmJob = serviceScope.launch {
+            delay(remaining)
+            val currentPrefs = SecurityPrefs.getInstance(applicationContext)
+            if (!currentPrefs.countdownEnabled || currentPrefs.countdownCapturePending) return@launch
+            currentPrefs.countdownCapturePending = true
+            if (currentPrefs.countdownEventId.isBlank()) {
+                currentPrefs.countdownEventId = currentPrefs.enqueueSecurityEvent().id
+            }
+            currentPrefs.recordCountdownDiagnostic("expired", "service", "pre_armed_service_expiration")
+            processIntruderCapture(false, true, currentPrefs.countdownEventId)
         }
     }
 
