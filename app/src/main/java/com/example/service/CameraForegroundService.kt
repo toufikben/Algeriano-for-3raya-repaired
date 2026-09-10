@@ -604,7 +604,29 @@ class CameraForegroundService : Service() {
         return prefs.isTrackingEnabled || prefs.countdownEnabled
     }
 
-    private suspend fun captureImageSilently(): File? = withContext(Dispatchers.IO) {
+    private suspend fun captureImageSilently(): File? {
+        val keyguardLocked = (getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager)
+            ?.isKeyguardLocked == true
+        SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+            "camera", "requested", "keyguard_locked=$keyguardLocked"
+        )
+        repeat(2) { attempt ->
+            val file = captureImageSilentlyOnce()
+            if (file != null) {
+                SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+                    "camera", "ready", "attempt=${attempt + 1},keyguard_locked=$keyguardLocked"
+                )
+                return file
+            }
+            if (attempt == 0) kotlinx.coroutines.delay(700L)
+        }
+        SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+            "camera", "failed", "attempts=2,keyguard_locked=$keyguardLocked"
+        )
+        return null
+    }
+
+    private suspend fun captureImageSilentlyOnce(): File? = withContext(Dispatchers.IO) {
         if (ActivityCompat.checkSelfPermission(this@CameraForegroundService, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             Log.w(TAG, "Camera permission not granted")
             return@withContext null
@@ -741,7 +763,7 @@ class CameraForegroundService : Service() {
                                                     closeCamera()
                                                 }
                                             }
-                                        }, 1000L)
+                                        }, 1800L)
                                     } catch (e: CameraAccessException) {
                                         Log.e(TAG, "Capture failed", e)
                                         if (!captureCompleted.isCompleted) {
@@ -794,7 +816,7 @@ class CameraForegroundService : Service() {
 
         // Allow slow front-camera HALs enough time after AE/AWB/AF warm-up.
         try {
-            val capturedFile = kotlinx.coroutines.withTimeoutOrNull(10_000L) {
+            val capturedFile = kotlinx.coroutines.withTimeoutOrNull(15_000L) {
                 captureCompleted.await()
             }
             if (capturedFile == null) {
@@ -933,16 +955,28 @@ class CameraForegroundService : Service() {
             ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
+        ) != PackageManager.PERMISSION_GRANTED
         ) {
             Log.w(TAG, "Notification permission not granted; skipping alert notification")
+            SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+                "notification", "skipped", "post_notifications_permission_missing"
+            )
             return
         }
 
         try {
-            NotificationManagerCompat.from(this).notify(ALERT_NOTIFICATION_ID, notification)
+            NotificationManagerCompat.from(this).notify(
+                ALERT_NOTIFICATION_ID + (System.currentTimeMillis() % 1000L).toInt(),
+                notification
+            )
+            SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+                "notification", "sent", "photo=$photoCaptured,location=$locationAvailable,email=$emailSent"
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Error posting alert notification", e)
+            SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+                "notification", "failed", "${e.javaClass.simpleName}:${e.message}"
+            )
         }
     }
 
