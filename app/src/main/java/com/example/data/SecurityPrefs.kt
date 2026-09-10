@@ -42,6 +42,13 @@ enum class SecurityEventStatus {
     FAILED, FAILED_RETRYABLE, FAILED_FINAL, CANCELLED
 }
 
+private fun SecurityEventStatus.isTerminal(): Boolean = this in setOf(
+    SecurityEventStatus.SENT,
+    SecurityEventStatus.FAILED,
+    SecurityEventStatus.FAILED_FINAL,
+    SecurityEventStatus.CANCELLED
+)
+
 data class SecurityEvent(
     val id: String,
     val timestamp: Long,
@@ -274,7 +281,7 @@ class SecurityPrefs private constructor(private val context: Context) {
                     event.status == SecurityEventStatus.SEND_PENDING ||
                     event.status == SecurityEventStatus.FAILED_RETRYABLE
                 ) event.copy(status = SecurityEventStatus.CANCELLED) else event
-            }.takeLast(MAX_SECURITY_EVENTS)
+            }
         }
     }
 
@@ -287,7 +294,7 @@ class SecurityPrefs private constructor(private val context: Context) {
             status = SecurityEventStatus.PENDING,
             updatedAt = timestamp
         )
-        updateSecurityEventsInRoom { (it + event).takeLast(MAX_SECURITY_EVENTS) }
+        updateSecurityEventsInRoom { it + event }
         return event
     }
 
@@ -499,8 +506,16 @@ class SecurityPrefs private constructor(private val context: Context) {
 
     private fun getSecurityEventsFromRoom(): List<SecurityEvent> = store.events()
 
+    fun getSecurityEvents(): List<SecurityEvent> = getSecurityEventsFromRoom()
+
     private fun updateSecurityEventsInRoom(transform: (List<SecurityEvent>) -> List<SecurityEvent>) {
-        store.replaceEvents(transform(store.events()).takeLast(MAX_SECURITY_EVENTS))
+        val events = transform(store.events())
+        val active = events.filterNot { it.status.isTerminal() }
+        val terminal = events.filter { it.status.isTerminal() }
+        // Never evict retryable or in-flight work; bound only terminal history.
+        store.replaceEvents(
+            active + terminal.takeLast((MAX_SECURITY_EVENTS - active.size).coerceAtLeast(0))
+        )
     }
 
     private fun migrateLegacyStorageIfNeeded() {

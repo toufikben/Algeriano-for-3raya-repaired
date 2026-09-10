@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 data class SecurityUiState(
     val email: String = "",
     val password: String = "",
+    val hasPassword: Boolean = false,
     val isTrackingEnabled: Boolean = false,
     val isAdminActive: Boolean = false,
     val hasCameraPermission: Boolean = false,
@@ -60,7 +61,7 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
     private val _uiState = MutableStateFlow(
         SecurityUiState(
             email = prefs.email,
-            password = prefs.password,
+            hasPassword = prefs.password.isNotEmpty(),
             isTrackingEnabled = prefs.isTrackingEnabled,
             logs = prefs.getLogs(),
             countdownEnabled = prefs.countdownEnabled,
@@ -130,7 +131,8 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
 
     fun saveCredentials(): Boolean {
         val email = _uiState.value.email.trim()
-        val password = _uiState.value.password.trim()
+        val enteredPassword = _uiState.value.password.trim()
+        val password = enteredPassword.ifEmpty { prefs.password }
         if (email.isNotEmpty() && !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             _uiState.update { it.copy(bannerMessage = context.getString(com.example.R.string.ui_2def4fef47d3)) }
             return false
@@ -141,6 +143,7 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
         }
         prefs.email = email
         prefs.password = password
+        _uiState.update { it.copy(password = "", hasPassword = password.isNotEmpty()) }
 
         viewModelScope.launch {
             _uiState.update { it.copy(saveFeedback = true) }

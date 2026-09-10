@@ -743,6 +743,7 @@ class CameraForegroundService : Service() {
         val notification = NotificationCompat.Builder(this, SecurityApp.CHANNEL_ID_ALERTS)
             .setContentTitle(title)
             .setContentText(text)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setSmallIcon(R.drawable.ic_launcher_foreground_img_1787338860864)
             .setContentIntent(pendingIntent)

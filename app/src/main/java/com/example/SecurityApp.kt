@@ -8,8 +8,13 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.i18n.LanguageStore
+import com.example.worker.PhotoCleanupWorker
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class SecurityApp : Application() {
 
@@ -30,6 +35,18 @@ class SecurityApp : Application() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
+        schedulePhotoCleanup()
+    }
+
+    private fun schedulePhotoCleanup() {
+        val request = PeriodicWorkRequestBuilder<PhotoCleanupWorker>(7, TimeUnit.DAYS)
+            .setInitialDelay(7, TimeUnit.DAYS)
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            PhotoCleanupWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
     }
 
     private fun createNotificationChannels() {

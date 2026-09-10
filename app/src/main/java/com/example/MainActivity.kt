@@ -380,7 +380,7 @@ fun SecurityMainScreen(
                     hasCameraPermission = uiState.hasCameraPermission,
                     hasLocationPermission = uiState.hasLocationPermission,
                     hasNotificationPermission = uiState.hasNotificationPermission,
-                    emailConfigured = uiState.email.isNotBlank() && uiState.password.isNotBlank()
+                    emailConfigured = uiState.email.isNotBlank() && uiState.hasPassword
                 )
             }
 
