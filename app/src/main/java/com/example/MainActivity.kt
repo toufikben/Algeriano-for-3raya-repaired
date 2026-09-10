@@ -427,6 +427,7 @@ fun SecurityMainScreen(
                 CredentialsCard(
                     email = uiState.email,
                     password = uiState.password,
+                    hasSavedPassword = uiState.hasPassword,
                     onEmailChange = viewModel::onEmailChange,
                     onPasswordChange = viewModel::onPasswordChange,
                     onSave = viewModel::saveCredentials,

@@ -58,6 +58,7 @@ import com.example.ui.theme.EmeraldActive
 fun CredentialsCard(
     email: String,
     password: String,
+    hasSavedPassword: Boolean,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onSave: () -> Unit,
@@ -129,7 +130,7 @@ fun CredentialsCard(
                 }
             }
 
-            if (email.isBlank() || password.isBlank()) {
+            if (email.isBlank() || (password.isBlank() && !hasSavedPassword)) {
                 Text(
                     text = tr(com.example.R.string.ui_8c211ebd655f),
                     color = Color(0xFFFCD34D),
@@ -195,7 +196,11 @@ fun CredentialsCard(
                     .fillMaxWidth()
                     .testTag("password_input"),
                 placeholder = {
-                    Text("abcd efgh ijkl mnop", color = Color(0xFF64748B), fontSize = 14.sp)
+                    Text(
+                        text = if (hasSavedPassword) "App password saved securely" else "abcd efgh ijkl mnop",
+                        color = Color(0xFF64748B),
+                        fontSize = 14.sp
+                    )
                 },
                 leadingIcon = {
                     Icon(
