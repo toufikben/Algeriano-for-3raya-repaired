@@ -110,14 +110,6 @@ class CameraForegroundService : Service() {
             return START_NOT_STICKY
         }
 
-        // Protection is event-driven. Do not keep an idle camera foreground
-        // service alive; Android 14 may stop or reject that pattern.
-        if (action == ACTION_START_MONITORING) {
-            Log.d(TAG, "Ignoring idle monitoring request; captures are event-driven")
-            stopSelf(startId)
-            return START_NOT_STICKY
-        }
-
         if (action == ACTION_ARM_COUNTDOWN) {
             if (!foregroundStarted && !promoteToForeground(buildForegroundNotification())) {
                 SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
@@ -161,6 +153,13 @@ class CameraForegroundService : Service() {
                 "foreground_service_started"
             )
             foregroundStarted = true
+        }
+
+        if (action == ACTION_START_MONITORING) {
+            SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+                "service", "armed", "protection_foreground_service_ready"
+            )
+            return START_STICKY
         }
 
         when (action) {

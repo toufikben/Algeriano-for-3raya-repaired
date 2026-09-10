@@ -120,6 +120,21 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
     fun resumeProtectionFromVisibleActivity() {
         refreshCredentials()
         if (!prefs.isTrackingEnabled) return
+        runCatching {
+            val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
+                action = CameraForegroundService.ACTION_START_MONITORING
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ContextCompat.startForegroundService(context, serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+            prefs.recordCountdownDiagnostic("service_arm", "requested", "activity_resumed")
+        }.onFailure { error ->
+            prefs.recordCountdownDiagnostic(
+                "service_arm", "failed", "resume:${error.javaClass.simpleName}:${error.message}"
+            )
+        }
         CountdownScheduler.rescheduleFromPrefs(context)
         SecurityEventDistributor.dispatchPendingFromVisibleContext(context)
     }
@@ -204,8 +219,25 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
         _uiState.update { it.copy(isTrackingEnabled = enabled) }
 
         if (enabled) {
-            // The camera service is event-driven; it starts only for a real
-            // capture or an explicit test from a visible user action.
+            // Start the foreground service while the activity is visible. This
+            // lets DeviceAdminReceiver deliver a failed-unlock event to an
+            // already-running service instead of attempting a camera FGS start
+            // from the lock screen on Android 14+.
+            runCatching {
+                val serviceIntent = Intent(context, CameraForegroundService::class.java).apply {
+                    action = CameraForegroundService.ACTION_START_MONITORING
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    ContextCompat.startForegroundService(context, serviceIntent)
+                } else {
+                    context.startService(serviceIntent)
+                }
+                prefs.recordCountdownDiagnostic("service_arm", "requested", "tracking_enabled")
+            }.onFailure { error ->
+                prefs.recordCountdownDiagnostic(
+                    "service_arm", "failed", "tracking:${error.javaClass.simpleName}:${error.message}"
+                )
+            }
             SecurityEventDistributor.dispatchPendingFromVisibleContext(context)
         } else {
             context.stopService(Intent(context, CameraForegroundService::class.java))
