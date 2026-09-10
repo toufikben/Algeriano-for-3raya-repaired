@@ -118,9 +118,22 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resumeProtectionFromVisibleActivity() {
+        refreshCredentials()
         if (!prefs.isTrackingEnabled) return
         CountdownScheduler.rescheduleFromPrefs(context)
         SecurityEventDistributor.dispatchPendingFromVisibleContext(context)
+    }
+
+    fun refreshCredentials() {
+        val savedEmail = prefs.email
+        val savedPassword = prefs.password
+        _uiState.update {
+            it.copy(
+                email = savedEmail,
+                password = savedPassword,
+                hasPassword = savedPassword.isNotEmpty()
+            )
+        }
     }
 
     fun onEmailChange(newEmail: String) {
