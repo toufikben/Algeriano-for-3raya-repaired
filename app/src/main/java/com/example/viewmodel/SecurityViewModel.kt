@@ -62,6 +62,7 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
     private val _uiState = MutableStateFlow(
         SecurityUiState(
             email = prefs.email,
+            password = prefs.password,
             hasPassword = prefs.password.isNotEmpty(),
             isTrackingEnabled = prefs.isTrackingEnabled,
             logs = prefs.getLogs(),
@@ -153,7 +154,7 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
             }
             return false
         }
-        _uiState.update { it.copy(password = "", hasPassword = password.isNotEmpty()) }
+        _uiState.update { it.copy(password = password, hasPassword = password.isNotEmpty()) }
 
         viewModelScope.launch {
             _uiState.update { it.copy(saveFeedback = true) }

@@ -196,11 +196,7 @@ fun CredentialsCard(
                     .fillMaxWidth()
                     .testTag("password_input"),
                 placeholder = {
-                    Text(
-                        text = if (hasSavedPassword) "App password saved securely" else "abcd efgh ijkl mnop",
-                        color = Color(0xFF64748B),
-                        fontSize = 14.sp
-                    )
+                    Text("abcd efgh ijkl mnop", color = Color(0xFF64748B), fontSize = 14.sp)
                 },
                 leadingIcon = {
                     Icon(
