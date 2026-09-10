@@ -25,6 +25,4 @@
 -keep class com.sun.mail.** { *; }
 -keep class javax.mail.** { *; }
 -keep class javax.activation.** { *; }
--keepresourcefiles META-INF/javamail.providers
--keepresourcefiles META-INF/javamail.default.providers
 -keepattributes Exceptions,InnerClasses,Signature
