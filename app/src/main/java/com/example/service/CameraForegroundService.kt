@@ -432,6 +432,15 @@ class CameraForegroundService : Service() {
                 )
                 prefs.addLog(log)
                 logSaved = true
+                // FIX(diagnostics): the success path previously logged nothing
+                // except when clearing a non-restart countdown, so screenshots
+                // showed service start/destroy with no capture/email stage in
+                // between. Always record the outcome incl. the email result.
+                prefs.recordCountdownDiagnostic(
+                    "capture",
+                    if (emailSuccess) "success" else "partial",
+                    "photo=$photoCaptured,location=$locationCaptured,email=$emailSuccess"
+                )
 
                 // 5. Show alert notification
                 showAlertNotification(
