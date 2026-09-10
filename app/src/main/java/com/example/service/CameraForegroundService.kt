@@ -408,6 +408,11 @@ class CameraForegroundService : Service() {
 
                     emailSuccess = sendResult.isSuccess
                     emailRetryable = sendResult.retryable
+                    prefs.recordCountdownDiagnostic(
+                        "email",
+                        if (emailSuccess) "success" else "failed",
+                        sendResult.errorMessage ?: "smtp_ok"
+                    )
                     if (!isTest && eventId != null) {
                         prefs.updateEmailState(
                             eventId,
@@ -663,7 +668,7 @@ class CameraForegroundService : Service() {
                                                     closeCamera()
                                                 }
                                             }
-                                        }, 350L)
+                                        }, 600L)
                                     } catch (e: CameraAccessException) {
                                         Log.e(TAG, "Capture failed", e)
                                         if (!captureCompleted.isCompleted) {

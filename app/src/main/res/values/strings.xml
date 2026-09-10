@@ -148,6 +148,9 @@
     <string name="ui_a0e4d77de101">4. اختر «السماح بالإعدادات المقيدة» (Allow restricted settings).&#10;</string>
     <string name="ui_e120a7c1a8a3">5. أدخل رمز قفل هاتفك للتأكيد، ثم ارجع للتطبيق وفعل الصلاحية بنجاح.</string>
     <string name="ui_531637fc771f">الانتقال المباشر لصفحة معلومات التطبيق</string>
+    <string name="ui_device_admin_restricted">رفض Android تفعيل مدير الجهاز. افتح معلومات التطبيق واختر السماح بالإعدادات المقيدة ثم أعد المحاولة.</string>
+    <string name="ui_device_admin_unavailable">تعذر فتح شاشة مدير الجهاز. افتح إعدادات التطبيق وفعّل السماح بالإعدادات المقيدة أولاً.</string>
+    <string name="ui_smtp_error_detail">فشل SMTP (%1$s): %2$s</string>
     <string name="ui_5bc19849e76b">تطوير وبرمجة:</string>
     <string name="ui_bd6640986dcd">استفسار حول تطبيق حماية الهاتف</string>
     <string name="ui_76a2cd4d2144">البريد الإلكتروني:</string>

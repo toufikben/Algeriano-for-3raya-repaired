@@ -148,6 +148,9 @@
     <string name="ui_a0e4d77de101">4. Select «Allow restricted settings» (Allow restricted settings).&#10;</string>
     <string name="ui_e120a7c1a8a3">5. Enter your phone lock code to confirm, then return to the app and enable the permission successfully.</string>
     <string name="ui_531637fc771f">Direct link to the app info page</string>
+    <string name="ui_device_admin_restricted">Android blocked Device Admin. Open App info, allow restricted settings, then try again.</string>
+    <string name="ui_device_admin_unavailable">Could not open the Device Admin screen. Open App info and allow restricted settings first.</string>
+    <string name="ui_smtp_error_detail">SMTP failed (%1$s): %2$s</string>
     <string name="ui_5bc19849e76b">Development and programming:</string>
     <string name="ui_bd6640986dcd">Inquiry about the Phone protection app</string>
     <string name="ui_76a2cd4d2144">Email:</string>

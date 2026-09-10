@@ -17,6 +17,7 @@ import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeBodyPart
 import javax.mail.internet.MimeMessage
 import javax.mail.internet.MimeMultipart
+import javax.mail.MessagingException
 
 object EmailSender {
 
@@ -120,9 +121,24 @@ object EmailSender {
         } catch (e: AuthenticationFailedException) {
             System.err.println("EmailSender: SMTP authentication failed")
             SendResult(false, context.getString(R.string.ui_464e2cc141b1), retryable = false)
+        } catch (e: MessagingException) {
+            val detail = e.message?.take(160).orEmpty()
+            val authenticationFailure = detail.contains("535") ||
+                detail.contains("534") || detail.contains("5.7.8")
+            System.err.println("EmailSender: SMTP messaging failure ${e.javaClass.simpleName}: $detail")
+            SendResult(
+                false,
+                context.getString(R.string.ui_smtp_error_detail, e.javaClass.simpleName, detail),
+                retryable = !authenticationFailure
+            )
         } catch (e: Exception) {
-            System.err.println("EmailSender: SMTP send failed: ${e.javaClass.simpleName}")
-            SendResult(false, context.getString(R.string.ui_ece94e33ec57))
+            val detail = e.message?.take(160).orEmpty()
+            System.err.println("EmailSender: SMTP send failed: ${e.javaClass.simpleName}: $detail")
+            SendResult(
+                false,
+                context.getString(R.string.ui_smtp_error_detail, e.javaClass.simpleName, detail),
+                retryable = true
+            )
         }
     }
 }

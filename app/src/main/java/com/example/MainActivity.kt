@@ -120,6 +120,7 @@ import com.example.i18n.LanguageStore
 import com.example.i18n.isRtl
 
 class MainActivity : ComponentActivity() {
+    private var deviceAdminRequestStarted = false
 
     private val viewModel: SecurityViewModel by viewModels()
 
@@ -157,6 +158,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (deviceAdminRequestStarted) {
+            deviceAdminRequestStarted = false
+            val adminComponent = ComponentName(this, MyDeviceAdminReceiver::class.java)
+            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            if (!dpm.isAdminActive(adminComponent)) {
+                Toast.makeText(this, getString(com.example.R.string.ui_device_admin_restricted), Toast.LENGTH_LONG).show()
+                runCatching {
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:$packageName")
+                    })
+                }
+            }
+        }
         viewModel.resumeProtectionFromVisibleActivity()
     }
 
@@ -179,7 +193,13 @@ class MainActivity : ComponentActivity() {
                     getString(com.example.R.string.ui_81f1f7a15d28)
                 )
             }
-            startActivity(intent)
+            deviceAdminRequestStarted = true
+            try {
+                startActivity(intent)
+            } catch (_: Exception) {
+                deviceAdminRequestStarted = false
+                Toast.makeText(this, getString(com.example.R.string.ui_device_admin_unavailable), Toast.LENGTH_LONG).show()
+            }
         } else {
             Toast.makeText(this, getString(com.example.R.string.ui_98f5fc225503), Toast.LENGTH_SHORT).show()
         }
