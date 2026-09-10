@@ -51,9 +51,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -322,23 +322,44 @@ class CameraForegroundService : Service() {
                 // 1–2. Start the camera and location requests together. A
                 // retry reuses the saved photo/coordinates and does not start
                 // either hardware operation again.
-                val (capturedFile, location) = coroutineScope {
+                // Camera is best-effort for countdown events. A camera HAL,
+                // keyguard, or timeout must never cancel the location request
+                // or prevent the SMTP message from being sent without an
+                // attachment. supervisorScope keeps both operations alive
+                // independently and records the failed component explicitly.
+                val (capturedFile, location) = supervisorScope {
                     val photoDeferred = async(Dispatchers.IO) {
                         if (sendOnly) {
                             existingEvent?.photoPath?.let(::File)?.takeIf { it.exists() }
                         } else {
-                            captureImageSilently()
+                            try {
+                                captureImageSilently()
+                            } catch (error: Exception) {
+                                prefs.recordCountdownDiagnostic(
+                                    "camera", "failed",
+                                    "isolated:${error.javaClass.simpleName}:${error.message}"
+                                )
+                                null
+                            }
                         }
                     }
                     val locationDeferred = async(Dispatchers.IO) {
-                        if (sendOnly && existingEvent?.latitude != null && existingEvent.longitude != null) {
-                            Location("saved-event").apply {
-                                latitude = existingEvent.latitude
-                                longitude = existingEvent.longitude
-                                time = existingEvent.locationTimestamp ?: existingEvent.timestamp
+                        try {
+                            if (sendOnly && existingEvent?.latitude != null && existingEvent.longitude != null) {
+                                Location("saved-event").apply {
+                                    latitude = existingEvent.latitude
+                                    longitude = existingEvent.longitude
+                                    time = existingEvent.locationTimestamp ?: existingEvent.timestamp
+                                }
+                            } else {
+                                fetchCurrentLocation()
                             }
-                        } else {
-                            fetchCurrentLocation()
+                        } catch (error: Exception) {
+                            prefs.recordCountdownDiagnostic(
+                                "location", "failed",
+                                "isolated:${error.javaClass.simpleName}:${error.message}"
+                            )
+                            null
                         }
                     }
                     photoDeferred.await() to locationDeferred.await()
