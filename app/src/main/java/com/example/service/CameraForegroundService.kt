@@ -257,9 +257,6 @@ class CameraForegroundService : Service() {
         eventId: String? = null
     ) {
         val prefs = SecurityPrefs.getInstance(applicationContext)
-        prefs.recordCountdownDiagnostic(
-            "capture", "started", "test=$isTest,countdown=$isCountdownCapture,event=${eventId ?: "none"}"
-        )
         if (!isTest && eventId.isNullOrBlank()) {
             Log.e(TAG, "Ignoring capture request without a security event id")
             if (isCountdownCapture) {
@@ -279,6 +276,9 @@ class CameraForegroundService : Service() {
             return
         }
         if (!captureInProgress.compareAndSet(false, true)) {
+            prefs.recordCountdownDiagnostic(
+                "capture", "ignored", "already_in_progress,event=${eventId ?: "none"}"
+            )
             Log.w(TAG, "Capture already in progress; ignoring duplicate request")
             // FIX: do not downgrade SEND_PENDING/FAILED_RETRYABLE to PENDING
             // and do not spawn unbounded waiter coroutines. The event already
@@ -289,6 +289,10 @@ class CameraForegroundService : Service() {
             }
             return
         }
+
+        prefs.recordCountdownDiagnostic(
+            "capture", "started", "test=$isTest,countdown=$isCountdownCapture,event=${eventId ?: "none"}"
+        )
 
         if (!isTest && eventId != null && !sendOnly) {
             prefs.markCapturePending(eventId)
@@ -565,6 +569,7 @@ class CameraForegroundService : Service() {
                     runCatching { wakeLock.release() }
                 }
                 if (!isServicePersistent()) {
+                    prefs.recordCountdownDiagnostic("service", "stopping", "no_active_tracking_or_countdown")
                     stopForeground(false)
                     stopSelf()
                 }
@@ -591,7 +596,12 @@ class CameraForegroundService : Service() {
     }
 
     private fun isServicePersistent(): Boolean {
-        return false
+        val prefs = SecurityPrefs.getInstance(applicationContext)
+        // A failed unlock can arrive while the device is locked. Keep the
+        // foreground service alive after a capture whenever protection is
+        // enabled, so Android does not require a forbidden camera-FGS start
+        // from DeviceAdminReceiver on Android 14+.
+        return prefs.isTrackingEnabled || prefs.countdownEnabled
     }
 
     private suspend fun captureImageSilently(): File? = withContext(Dispatchers.IO) {
