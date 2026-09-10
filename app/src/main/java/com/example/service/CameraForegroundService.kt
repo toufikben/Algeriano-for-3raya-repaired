@@ -101,6 +101,9 @@ class CameraForegroundService : Service() {
         val action = intent?.action ?: ACTION_CAPTURE_AND_SEND
         foregroundNeedsCamera = action != ACTION_SEND_PENDING
         Log.d(TAG, "onStartCommand action: $action")
+        SecurityPrefs.getInstance(applicationContext).recordCountdownDiagnostic(
+            "service", "command_received", "action=$action"
+        )
 
         if (action == ACTION_STOP_MONITORING) {
             NotificationManagerCompat.from(this).cancel(ALERT_NOTIFICATION_ID)
@@ -254,6 +257,9 @@ class CameraForegroundService : Service() {
         eventId: String? = null
     ) {
         val prefs = SecurityPrefs.getInstance(applicationContext)
+        prefs.recordCountdownDiagnostic(
+            "capture", "started", "test=$isTest,countdown=$isCountdownCapture,event=${eventId ?: "none"}"
+        )
         if (!isTest && eventId.isNullOrBlank()) {
             Log.e(TAG, "Ignoring capture request without a security event id")
             if (isCountdownCapture) {

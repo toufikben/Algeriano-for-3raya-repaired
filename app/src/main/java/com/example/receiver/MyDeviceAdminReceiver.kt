@@ -15,12 +15,18 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         super.onPasswordFailed(context, intent)
 
         val prefs = SecurityPrefs.getInstance(context)
+        prefs.recordCountdownDiagnostic(
+            "device_admin", "password_failed_received", "tracking=${prefs.isTrackingEnabled}"
+        )
         if (!prefs.isTrackingEnabled) {
             Log.d("DeviceAdminReceiver", "Password attempt ignored because protection is disabled")
             return
         }
 
         val failedAttempts = prefs.registerFailedUnlockAttempt()
+        prefs.recordCountdownDiagnostic(
+            "device_admin", "attempt_recorded", "threshold=$failedAttempts/${prefs.failedThreshold}"
+        )
         if (failedAttempts < prefs.failedThreshold) {
             Log.d("DeviceAdminReceiver", "Failed unlock recorded ($failedAttempts/${prefs.failedThreshold})")
             return
@@ -30,6 +36,7 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
         // service serializes concurrent captures and the durable queue handles
         // events that cannot be processed immediately.
         val event = prefs.enqueueSecurityEvent()
+        prefs.recordCountdownDiagnostic("event", "created", "event_id=${event.id}")
         val captureIntent = Intent(context, CameraForegroundService::class.java).apply {
             action = CameraForegroundService.ACTION_CAPTURE_AND_SEND
             putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, event.id)
@@ -42,9 +49,13 @@ class MyDeviceAdminReceiver : DeviceAdminReceiver() {
             // whole app, uses the same background-start-safe path as every
             // other dispatch site (SecurityEventDistributor, SecurityEventWorker).
             ContextCompat.startForegroundService(context, captureIntent)
+            prefs.recordCountdownDiagnostic("device_admin", "service_requested", "event_id=${event.id}")
             Log.d("DeviceAdminReceiver", "Failed-unlock capture dispatched for event ${event.id}")
         } catch (e: Exception) {
             Log.e("DeviceAdminReceiver", "Direct capture dispatch failed; queued for recovery", e)
+            prefs.recordCountdownDiagnostic(
+                "device_admin", "service_failed", "${e.javaClass.simpleName}:${e.message}"
+            )
             SecurityEventDistributor.enqueue(context, event.id)
         }
     }

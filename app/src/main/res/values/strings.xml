@@ -257,6 +257,7 @@
     <string name="ui_countdown_diagnostics_title">تشخيص مؤقت الحماية</string>
     <string name="ui_countdown_diagnostics_description">آخر الأحداث المسجلة للمؤقت ومحاولات تشغيل الخدمة. لا يتم تسجيل PIN أو بيانات البريد.</string>
     <string name="ui_countdown_diagnostics_empty">لا توجد أحداث مسجلة بعد.</string>
+    <string name="ui_copy_diagnostics">نسخ التشخيص الكامل</string>
     <string name="ui_detailed_states">التفاصيل</string>
     <string name="ui_state_photo">الصورة</string>
     <string name="ui_state_location">الموقع</string>

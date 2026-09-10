@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +36,7 @@ fun CountdownDiagnosticsCard(
     events: List<CountdownDiagnosticEvent>,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -55,6 +59,29 @@ fun CountdownDiagnosticsCard(
                 color = Color(0xFFCBD5E1),
                 fontSize = 12.sp
             )
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    val report = events.asReversed().joinToString("\n") { event ->
+                        val time = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM)
+                            .format(Date(event.timestamp))
+                        "$time | ${event.stage}/${event.status} | ${event.detail.ifBlank { "—" }}"
+                    }
+                    val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
+                    clipboard?.setPrimaryClip(
+                        android.content.ClipData.newPlainText(
+                            context.getString(R.string.ui_countdown_diagnostics_title),
+                            report.ifBlank { context.getString(R.string.ui_countdown_diagnostics_empty) }
+                        )
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(Icons.Filled.ContentCopy, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text(stringResource(R.string.ui_copy_diagnostics))
+            }
             Spacer(Modifier.height(10.dp))
             if (events.isEmpty()) {
                 Text(
