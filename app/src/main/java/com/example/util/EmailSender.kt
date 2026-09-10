@@ -53,6 +53,10 @@ object EmailSender {
                 put("mail.smtp.starttls.required", "true")
                 put("mail.smtp.ssl.protocols", "TLSv1.2")
                 put("mail.smtp.ssl.checkserveridentity", "true")
+                // Android JavaMail may not select the platform trust manager
+                // consistently for STARTTLS; scope the trust override to the
+                // fixed Gmail host while retaining hostname verification.
+                put("mail.smtp.ssl.trust", "smtp.gmail.com")
                 put("mail.smtp.connectiontimeout", "15000")
                 put("mail.smtp.timeout", "15000")
             }
