@@ -50,6 +50,7 @@ import com.example.ui.theme.EmeraldActive
 private data class CountdownOption(@androidx.annotation.StringRes val labelRes: Int, val durationMillis: Long)
 
 private val countdownOptions = listOf(
+    CountdownOption(com.example.R.string.ui_countdown_one_minute, 1 * 60 * 1000L),
     CountdownOption(com.example.R.string.ui_40add5d3e4a1, 60 * 60 * 1000L),
     CountdownOption(com.example.R.string.ui_2dbaa8dc4ba5, 2 * 60 * 60 * 1000L),
     CountdownOption(com.example.R.string.ui_3be76f716469, 6 * 60 * 60 * 1000L),
@@ -152,7 +153,7 @@ fun CountdownCard(
                 Text(context.getString(com.example.R.string.ui_85026a616144), color = Color(0xFFCBD5E1), fontSize = 12.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    countdownOptions.take(3).forEach { option ->
+                    countdownOptions.take(4).forEach { option ->
                         DurationButton(option, selectedDuration == option) {
                             selectedDuration = option
                             if (option.durationMillis == 0L) showCustomDuration = true
@@ -161,7 +162,7 @@ fun CountdownCard(
                 }
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    countdownOptions.drop(3).forEach { option ->
+                    countdownOptions.drop(4).forEach { option ->
                         DurationButton(option, selectedDuration == option) {
                             selectedDuration = option
                             if (option.durationMillis == 0L) showCustomDuration = true
