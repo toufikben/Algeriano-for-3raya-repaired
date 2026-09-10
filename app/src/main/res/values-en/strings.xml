@@ -57,6 +57,7 @@
     <string name="ui_ece94e33ec57">Could not connect to the mail server; will retry if the error is temporary</string>
     <string name="ui_2def4fef47d3">Enter a valid email like name@gmail.com</string>
     <string name="ui_f509a4a96bac">Enter the app password along with the email</string>
+    <string name="ui_credentials_save_failed">The app password could not be saved securely. Please try again.</string>
     <string name="ui_9a86733913f4">Please enable Device Admin permission first to start tracking</string>
     <string name="ui_66c3afea06a2">The system refused to start the background protection service; open the app and enable protection from the UI</string>
     <string name="ui_e2e69f0a016c">Cannot start the service; check camera and location permissions</string>

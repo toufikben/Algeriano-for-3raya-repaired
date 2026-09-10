@@ -57,6 +57,7 @@
     <string name="ui_ece94e33ec57">تعذر الاتصال بخادم البريد؛ ستتم إعادة المحاولة إذا كان الخطأ مؤقتًا</string>
     <string name="ui_2def4fef47d3">أدخل بريدًا إلكترونيًا صحيحًا مثل name@gmail.com</string>
     <string name="ui_f509a4a96bac">أدخل كلمة مرور التطبيق مع البريد الإلكتروني</string>
+    <string name="ui_credentials_save_failed">تعذر حفظ كلمة مرور التطبيق بشكل آمن. أعد المحاولة.</string>
     <string name="ui_9a86733913f4">يرجى تفعيل صلاحية مدير الجهاز أولاً لتشغيل التتبع</string>
     <string name="ui_66c3afea06a2">رفض النظام تشغيل خدمة الحماية من الخلفية؛ افتح التطبيق وشغّل الحماية من الواجهة</string>
     <string name="ui_e2e69f0a016c">لا يمكن تشغيل الخدمة؛ تحقق من صلاحيات الكاميرا والموقع</string>

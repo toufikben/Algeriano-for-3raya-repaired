@@ -56,7 +56,8 @@
     <string name="ui_464e2cc141b1">Échec de la vérification des identifiants SMTP ; vérifiez l’adresse e‑mail et le mot de passe de l’application</string>
     <string name="ui_ece94e33ec57">Impossible de se connecter au serveur de courrier ; une nouvelle tentative sera effectuée si l’erreur est temporaire</string>
     <string name="ui_2def4fef47d3">Saisissez une adresse e‑mail valide, par exemple name@gmail.com</string>
-    <string name="ui_f509a4a96bac">Saisissez le mot de passe de l’application associé à l’adresse e‑mail</string>
+    <string name="ui_f509a4a96bac">Saisissez le mot de passe de l’application associé à l’adresse e-mail</string>
+    <string name="ui_credentials_save_failed">Le mot de passe de l’application n’a pas pu être enregistré en toute sécurité. Réessayez.</string>
     <string name="ui_9a86733913f4">Veuillez d’abord activer l’autorisation Device Admin pour démarrer le suivi</string>
     <string name="ui_66c3afea06a2">Le système a refusé de lancer le service de protection en arrière‑plan ; ouvrez l’application et activez la protection depuis l’interface</string>
     <string name="ui_e2e69f0a016c">Impossible de démarrer le service ; vérifiez les autorisations de la caméra et de la localisation</string>

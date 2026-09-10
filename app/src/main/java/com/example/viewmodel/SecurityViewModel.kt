@@ -144,6 +144,15 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
         }
         prefs.email = email
         prefs.password = password
+        if (password.isNotEmpty() && prefs.password != password) {
+            _uiState.update {
+                it.copy(
+                    bannerMessage = context.getString(com.example.R.string.ui_credentials_save_failed),
+                    hasPassword = false
+                )
+            }
+            return false
+        }
         _uiState.update { it.copy(password = "", hasPassword = password.isNotEmpty()) }
 
         viewModelScope.launch {
