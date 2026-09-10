@@ -102,9 +102,15 @@ class CameraForegroundService : Service() {
         }
 
         // Protection is event-driven. Do not keep an idle camera foreground
-        // service alive; Android 14 may stop or reject that pattern.
+        // service alive; Android 14+ may stop or reject that pattern.
+        // Background service start is restricted on Android 12+.
+        // Document this limitation clearly.
         if (action == ACTION_START_MONITORING) {
-            Log.d(TAG, "Ignoring idle monitoring request; captures are event-driven")
+            Log.d(
+                TAG,
+                "Ignoring idle monitoring request; captures are event-driven. " +
+                "Note: Foreground service start from background is restricted on Android 12+"
+            )
             stopSelf(startId)
             return START_NOT_STICKY
         }
@@ -116,6 +122,12 @@ class CameraForegroundService : Service() {
                     "service",
                     "failed",
                     "promote_to_foreground_failed"
+                )
+                Log.w(
+                    TAG,
+                    "Failed to promote service to foreground. This may occur on Android 12+ " +
+                    "due to background execution restrictions. Consider showing a user notification " +
+                    "and asking the user to open the app."
                 )
                 if (action == ACTION_COUNTDOWN_EXPIRED) {
                     prefs.countdownCapturePending = true
@@ -180,18 +192,26 @@ class CameraForegroundService : Service() {
                 notification,
                 foregroundServiceType
             )
+            Log.d(TAG, "Service promoted to foreground successfully")
             true
+        } catch (e: ForegroundServiceStartNotAllowedException) {
+            // Android 12+ specific: background execution is restricted
+            Log.e(
+                TAG,
+                "ForegroundServiceStartNotAllowedException: The system does not allow background service start. " +
+                "This is expected on Android 12+ when device is locked. Consider asking user to unlock device or open app."
+            )
+            false
+        } catch (e: SecurityException) {
+            // Missing permissions or while-in-use violations
+            Log.e(
+                TAG,
+                "SecurityException: Foreground service permission or while-in-use access is missing. " +
+                "Ensure camera and location permissions are granted."
+            )
+            false
         } catch (e: Exception) {
-            when {
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                    e is ForegroundServiceStartNotAllowedException -> {
-                    Log.e(TAG, "Foreground service start not allowed by the system", e)
-                }
-                e is SecurityException -> {
-                    Log.e(TAG, "Foreground service permission or while-in-use access is missing", e)
-                }
-                else -> Log.e(TAG, "Unable to promote service to foreground", e)
-            }
+            Log.e(TAG, "Unable to promote service to foreground: ${e.javaClass.simpleName}", e)
             false
         }
     }
@@ -387,6 +407,7 @@ class CameraForegroundService : Service() {
                     val emailStatus = if (emailSuccess) {
                         getString(com.example.R.string.ui_fd5b9e2ff279)
                     } else {
+                        // Use user-friendly message, not raw server error
                         getString(com.example.R.string.ui_email_failed, sendResult.errorMessage ?: "")
                     }
                     statusMsg = "$statusMsg${getString(com.example.R.string.ui_separator)}$emailStatus"
@@ -443,7 +464,7 @@ class CameraForegroundService : Service() {
                     prefs.recordCountdownDiagnostic("capture", "completed", "countdown_cleared_after_capture")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error in processIntruderCapture", e)
+                Log.e(TAG, "Error in processIntruderCapture: ${e.javaClass.simpleName}", e)
                 prefs.recordCountdownDiagnostic(
                     "capture",
                     "failed",
@@ -515,7 +536,7 @@ class CameraForegroundService : Service() {
                 frontCameraId = cameraIds[0]
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error finding camera", e)
+            Log.e(TAG, "Error finding camera: ${e.javaClass.simpleName}", e)
             return@withContext null
         }
 
@@ -553,7 +574,7 @@ class CameraForegroundService : Service() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error saving captured image", e)
+                Log.e(TAG, "Error saving captured image: ${e.javaClass.simpleName}", e)
                 if (!captureCompleted.isCompleted) {
                     captureCompleted.complete(null)
                 }
@@ -581,7 +602,7 @@ class CameraForegroundService : Service() {
                                     try {
                                         session.capture(captureBuilder.build(), null, backgroundHandler)
                                     } catch (e: CameraAccessException) {
-                                        Log.e(TAG, "Capture failed", e)
+                                        Log.e(TAG, "Capture failed: ${e.javaClass.simpleName}", e)
                                         if (!captureCompleted.isCompleted) {
                                             captureCompleted.complete(null)
                                         }
@@ -600,7 +621,7 @@ class CameraForegroundService : Service() {
                             backgroundHandler
                         )
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error starting capture session", e)
+                        Log.e(TAG, "Error starting capture session: ${e.javaClass.simpleName}", e)
                         if (!captureCompleted.isCompleted) {
                             captureCompleted.complete(null)
                         }
@@ -626,7 +647,7 @@ class CameraForegroundService : Service() {
                 }
             }, backgroundHandler)
         } catch (e: Exception) {
-            Log.e(TAG, "Error opening camera", e)
+            Log.e(TAG, "Error opening camera: ${e.javaClass.simpleName}", e)
             captureCompleted.complete(null)
         }
 
@@ -644,7 +665,7 @@ class CameraForegroundService : Service() {
             }
             capturedFile ?: outputFile
         } catch (e: Exception) {
-            Log.e(TAG, "Error waiting for camera capture; closing camera resources", e)
+            Log.e(TAG, "Error waiting for camera capture: ${e.javaClass.simpleName}", e)
             closeCamera()
             null
         }
@@ -682,7 +703,7 @@ class CameraForegroundService : Service() {
                     }
                 }
         } catch (e: Exception) {
-            Log.e(TAG, "Error requesting location", e)
+            Log.e(TAG, "Error requesting location: ${e.javaClass.simpleName}", e)
             locationDeferred.complete(null)
         }
 
@@ -700,6 +721,7 @@ class CameraForegroundService : Service() {
                 kotlinx.coroutines.withTimeoutOrNull(2000L) { fallback.await() }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Error waiting for location: ${e.javaClass.simpleName}", e)
             null
         } finally {
             cancellationSource.cancel()
@@ -764,7 +786,7 @@ class CameraForegroundService : Service() {
         try {
             NotificationManagerCompat.from(this).notify(ALERT_NOTIFICATION_ID, notification)
         } catch (e: Exception) {
-            Log.e(TAG, "Error posting alert notification", e)
+            Log.e(TAG, "Error posting alert notification: ${e.javaClass.simpleName}", e)
         }
     }
 
@@ -775,6 +797,7 @@ class CameraForegroundService : Service() {
                 acquire(15000)
             }
         } catch (e: Exception) {
+            Log.w(TAG, "Error acquiring wake lock: ${e.javaClass.simpleName}", e)
             null
         }
     }
@@ -792,7 +815,7 @@ class CameraForegroundService : Service() {
             backgroundThread = null
             backgroundHandler = null
         } catch (e: Exception) {
-            Log.w(TAG, "Unable to stop camera background thread cleanly", e)
+            Log.w(TAG, "Unable to stop camera background thread cleanly: ${e.javaClass.simpleName}", e)
         }
     }
 
@@ -805,7 +828,7 @@ class CameraForegroundService : Service() {
             imageReader?.close()
             imageReader = null
         } catch (e: Exception) {
-            Log.w(TAG, "Unable to close camera resources cleanly", e)
+            Log.w(TAG, "Unable to close camera resources cleanly: ${e.javaClass.simpleName}", e)
         }
     }
 

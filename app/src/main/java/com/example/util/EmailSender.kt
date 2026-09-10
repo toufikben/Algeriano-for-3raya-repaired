@@ -1,6 +1,7 @@
 package com.example.util
 
 import android.content.Context
+import android.util.Log
 import com.example.R
 
 import java.io.File
@@ -20,10 +21,22 @@ import javax.mail.internet.MimeMultipart
 
 object EmailSender {
 
+    private const val TAG = "EmailSender"
+
+    enum class ErrorCode {
+        SMTP_AUTH_FAILED,      // Non-retryable
+        SMTP_CONNECTION_TIMEOUT,  // Retryable
+        SMTP_SEND_TIMEOUT,     // Retryable
+        SMTP_NETWORK_ERROR,    // Retryable
+        SMTP_CERTIFICATE_ERROR, // Non-retryable
+        SMTP_UNKNOWN_ERROR     // Retryable
+    }
+
     data class SendResult(
         val isSuccess: Boolean,
         val errorMessage: String? = null,
-        val retryable: Boolean = true
+        val retryable: Boolean = true,
+        val errorCode: ErrorCode? = null
     )
 
     fun sendSecurityAlert(
@@ -37,6 +50,7 @@ object EmailSender {
         eventId: String? = null
     ): SendResult {
         if (senderEmail.isBlank() || appPassword.isBlank()) {
+            Log.w(TAG, "Email or password is blank")
             return SendResult(false, context.getString(R.string.ui_16b9f058a24f))
         }
 
@@ -101,20 +115,93 @@ object EmailSender {
             try {
                 transport.connect(senderEmail.trim(), cleanPassword)
                 transport.sendMessage(message, message.allRecipients)
+                Log.d(TAG, "Email sent successfully for event: $eventId")
                 SendResult(true)
             } finally {
                 try {
                     if (transport.isConnected) transport.close()
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error closing SMTP transport", e)
                     // The send result should not be replaced by a close failure.
                 }
             }
         } catch (e: AuthenticationFailedException) {
-            System.err.println("EmailSender: SMTP authentication failed")
-            SendResult(false, context.getString(R.string.ui_464e2cc141b1), retryable = false)
+            Log.e(TAG, "SMTP authentication failed", e)
+            // Non-retryable: credentials are wrong
+            SendResult(
+                false,
+                context.getString(R.string.ui_464e2cc141b1),
+                retryable = false,
+                errorCode = ErrorCode.SMTP_AUTH_FAILED
+            )
+        } catch (e: javax.mail.MessagingException) {
+            val (errorCode, retryable, message) = classifySmtpError(e, context)
+            Log.e(TAG, "SMTP error: $errorCode (retryable=$retryable)", e)
+            SendResult(
+                false,
+                message,
+                retryable = retryable,
+                errorCode = errorCode
+            )
         } catch (e: Exception) {
-            System.err.println("EmailSender: SMTP send failed: ${e.javaClass.simpleName}")
-            SendResult(false, context.getString(R.string.ui_ece94e33ec57))
+            Log.e(TAG, "Unexpected error sending email: ${e.javaClass.simpleName}", e)
+            SendResult(
+                false,
+                context.getString(R.string.ui_ece94e33ec57),
+                retryable = true,
+                errorCode = ErrorCode.SMTP_UNKNOWN_ERROR
+            )
+        }
+    }
+
+    /**
+     * Classify SMTP errors into retryable and non-retryable categories.
+     * Does NOT expose raw server messages to UI.
+     */
+    private fun classifySmtpError(
+        e: javax.mail.MessagingException,
+        context: Context
+    ): Triple<ErrorCode, Boolean, String> {
+        val cause = e.cause?.javaClass?.simpleName ?: e.javaClass.simpleName
+        val message = e.message ?: ""
+
+        return when {
+            cause.contains("SSLException") || cause.contains("CertPathValidatorException") -> {
+                Triple(
+                    ErrorCode.SMTP_CERTIFICATE_ERROR,
+                    false, // Non-retryable
+                    context.getString(R.string.ui_ece94e33ec57)
+                )
+            }
+            message.contains("Connection timed out", ignoreCase = true) -> {
+                Triple(
+                    ErrorCode.SMTP_CONNECTION_TIMEOUT,
+                    true, // Retryable
+                    context.getString(R.string.ui_ece94e33ec57)
+                )
+            }
+            message.contains("timeout", ignoreCase = true) -> {
+                Triple(
+                    ErrorCode.SMTP_SEND_TIMEOUT,
+                    true, // Retryable
+                    context.getString(R.string.ui_ece94e33ec57)
+                )
+            }
+            message.contains("Network is unreachable", ignoreCase = true) ||
+            message.contains("No address associated", ignoreCase = true) -> {
+                Triple(
+                    ErrorCode.SMTP_NETWORK_ERROR,
+                    true, // Retryable
+                    context.getString(R.string.ui_ece94e33ec57)
+                )
+            }
+            else -> {
+                Triple(
+                    ErrorCode.SMTP_UNKNOWN_ERROR,
+                    true, // Retryable by default
+                    context.getString(R.string.ui_ece94e33ec57)
+                )
+            }
         }
     }
 }
