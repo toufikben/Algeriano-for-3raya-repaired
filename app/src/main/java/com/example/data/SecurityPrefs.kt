@@ -34,7 +34,10 @@ data class IntruderLog(
     val longitude: Double?,
     val address: String?,
     val emailSent: Boolean,
-    val statusMessage: String
+    val statusMessage: String,
+    val photoState: SecurityEventComponentState = if (photoCaptured) SecurityEventComponentState.SUCCEEDED else SecurityEventComponentState.FAILED,
+    val locationState: SecurityEventComponentState = if (locationCaptured) SecurityEventComponentState.SUCCEEDED else SecurityEventComponentState.FAILED,
+    val emailState: SecurityEventComponentState = if (emailSent) SecurityEventComponentState.SUCCEEDED else SecurityEventComponentState.FAILED
 )
 
 enum class SecurityEventStatus {

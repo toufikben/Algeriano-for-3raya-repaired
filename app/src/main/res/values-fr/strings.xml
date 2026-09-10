@@ -251,4 +251,13 @@
     <string name="ui_countdown_diagnostics_title">Diagnostic du minuteur de protection</string>
     <string name="ui_countdown_diagnostics_description">Derniers événements du minuteur et du démarrage du service. Le PIN et les e-mails ne sont pas enregistrés.</string>
     <string name="ui_countdown_diagnostics_empty">Aucun événement de diagnostic enregistré.</string>
+    <string name="ui_detailed_states">Détails</string>
+    <string name="ui_state_photo">Photo</string>
+    <string name="ui_state_location">Localisation</string>
+    <string name="ui_state_email">E-mail</string>
+    <string name="ui_state_not_requested">Non demandé</string>
+    <string name="ui_state_pending">En traitement</string>
+    <string name="ui_state_succeeded">Réussi</string>
+    <string name="ui_state_failed">Échec</string>
+    <string name="ui_state_deferred">Différé</string>
 </resources>

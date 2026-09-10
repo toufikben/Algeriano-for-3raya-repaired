@@ -438,6 +438,7 @@ class CameraForegroundService : Service() {
                 }
 
                 // 4. Save Log
+                val completedEvent = eventId?.let { prefs.getSecurityEvent(it) }
                 val log = IntruderLog(
                     id = UUID.randomUUID().toString(),
                     eventId = eventId,
@@ -449,7 +450,13 @@ class CameraForegroundService : Service() {
                     longitude = lng,
                     address = if (lat != null && lng != null) "$lat, $lng" else null,
                     emailSent = emailSuccess,
-                    statusMessage = statusMsg
+                    statusMessage = statusMsg,
+                    photoState = completedEvent?.photoState
+                        ?: if (photoCaptured) SecurityEventComponentState.SUCCEEDED else SecurityEventComponentState.FAILED,
+                    locationState = completedEvent?.locationState
+                        ?: if (locationCaptured) SecurityEventComponentState.SUCCEEDED else SecurityEventComponentState.FAILED,
+                    emailState = completedEvent?.emailState
+                        ?: if (emailSuccess) SecurityEventComponentState.SUCCEEDED else SecurityEventComponentState.FAILED
                 )
                 prefs.addLog(log)
                 logSaved = true
@@ -503,7 +510,10 @@ class CameraForegroundService : Service() {
                                     "${failedEvent.latitude}, ${failedEvent.longitude}"
                                 } else null,
                                 emailSent = false,
-                                statusMessage = getString(com.example.R.string.ui_unexpected_event, e.javaClass.simpleName)
+                                statusMessage = getString(com.example.R.string.ui_unexpected_event, e.javaClass.simpleName),
+                                photoState = failedEvent?.photoState ?: SecurityEventComponentState.FAILED,
+                                locationState = failedEvent?.locationState ?: SecurityEventComponentState.FAILED,
+                                emailState = failedEvent?.emailState ?: SecurityEventComponentState.FAILED
                             )
                         )
                     }

@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import com.example.data.IntruderLog
+import com.example.data.SecurityEventComponentState
 import com.example.ui.theme.CrimsonAlert
 import com.example.ui.theme.CyanAccent
 import com.example.ui.theme.CyberCardBorder
@@ -424,6 +425,23 @@ private fun IntruderLogItem(
                     maxLines = 2
                 )
 
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = tr(com.example.R.string.ui_detailed_states),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFCBD5E1)
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    ComponentStateChip(tr(com.example.R.string.ui_state_photo), log.photoState, Modifier.weight(1f))
+                    ComponentStateChip(tr(com.example.R.string.ui_state_location), log.locationState, Modifier.weight(1f))
+                    ComponentStateChip(tr(com.example.R.string.ui_state_email), log.emailState, Modifier.weight(1f))
+                }
+
                 if (log.latitude != null && log.longitude != null) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
@@ -451,6 +469,39 @@ private fun IntruderLogItem(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ComponentStateChip(
+    label: String,
+    state: SecurityEventComponentState,
+    modifier: Modifier = Modifier
+) {
+    val stateLabel = when (state) {
+        SecurityEventComponentState.NOT_REQUESTED -> tr(com.example.R.string.ui_state_not_requested)
+        SecurityEventComponentState.PENDING -> tr(com.example.R.string.ui_state_pending)
+        SecurityEventComponentState.SUCCEEDED -> tr(com.example.R.string.ui_state_succeeded)
+        SecurityEventComponentState.FAILED -> tr(com.example.R.string.ui_state_failed)
+        SecurityEventComponentState.DEFERRED -> tr(com.example.R.string.ui_state_deferred)
+    }
+    val stateColor = when (state) {
+        SecurityEventComponentState.SUCCEEDED -> EmeraldActive
+        SecurityEventComponentState.FAILED -> CrimsonAlert
+        SecurityEventComponentState.PENDING,
+        SecurityEventComponentState.DEFERRED -> com.example.ui.theme.AmberWarning
+        SecurityEventComponentState.NOT_REQUESTED -> Color(0xFF94A3B8)
+    }
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(stateColor.copy(alpha = 0.10f))
+            .border(1.dp, stateColor.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 5.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(label, fontSize = 9.sp, color = Color(0xFFCBD5E1), maxLines = 1)
+        Text(stateLabel, fontSize = 9.sp, color = stateColor, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
 

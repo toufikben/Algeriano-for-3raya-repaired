@@ -251,4 +251,13 @@
     <string name="ui_countdown_diagnostics_title">Protection timer diagnostics</string>
     <string name="ui_countdown_diagnostics_description">Recent timer and service-start events. PIN and email data are not recorded.</string>
     <string name="ui_countdown_diagnostics_empty">No diagnostic events recorded yet.</string>
+    <string name="ui_detailed_states">Details</string>
+    <string name="ui_state_photo">Photo</string>
+    <string name="ui_state_location">Location</string>
+    <string name="ui_state_email">Email</string>
+    <string name="ui_state_not_requested">Not requested</string>
+    <string name="ui_state_pending">Processing</string>
+    <string name="ui_state_succeeded">Succeeded</string>
+    <string name="ui_state_failed">Failed</string>
+    <string name="ui_state_deferred">Deferred</string>
 </resources>

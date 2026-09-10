@@ -52,7 +52,10 @@ data class IntruderLogEntity(
     val longitude: Double?,
     val address: String?,
     val emailSent: Boolean,
-    val statusMessage: String
+    val statusMessage: String,
+    val photoState: String,
+    val locationState: String,
+    val emailState: String
 )
 
 @Dao
@@ -99,7 +102,7 @@ interface SecurityDao {
 
 @Database(
     entities = [SecurityEventEntity::class, IntruderLogEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class SecurityDatabase : RoomDatabase() {
@@ -118,7 +121,7 @@ abstract class SecurityDatabase : RoomDatabase() {
                     // WAL lets the service and UI read without serializing all
                     // readers behind a single rollback journal.
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build().also { instance = it }
             }
 
@@ -134,6 +137,17 @@ abstract class SecurityDatabase : RoomDatabase() {
         private val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
             override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
                 backfillComponentStates(database)
+            }
+        }
+
+        private val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE intruder_logs ADD COLUMN photoState TEXT NOT NULL DEFAULT 'FAILED'")
+                database.execSQL("ALTER TABLE intruder_logs ADD COLUMN locationState TEXT NOT NULL DEFAULT 'FAILED'")
+                database.execSQL("ALTER TABLE intruder_logs ADD COLUMN emailState TEXT NOT NULL DEFAULT 'FAILED'")
+                database.execSQL("UPDATE intruder_logs SET photoState = CASE WHEN photoCaptured = 1 THEN 'SUCCEEDED' ELSE 'FAILED' END")
+                database.execSQL("UPDATE intruder_logs SET locationState = CASE WHEN locationCaptured = 1 THEN 'SUCCEEDED' ELSE 'FAILED' END")
+                database.execSQL("UPDATE intruder_logs SET emailState = CASE WHEN emailSent = 1 THEN 'SUCCEEDED' ELSE 'FAILED' END")
             }
         }
 
@@ -219,10 +233,17 @@ private fun SecurityEvent.toEntity() = SecurityEventEntity(
 
 private fun IntruderLogEntity.toModel() = IntruderLog(
     id, eventId, photoCaptured, locationCaptured, timestamp, photoPath,
-    latitude, longitude, address, emailSent, statusMessage
+    latitude, longitude, address, emailSent, statusMessage,
+    runCatching { SecurityEventComponentState.valueOf(photoState) }
+        .getOrDefault(SecurityEventComponentState.FAILED),
+    runCatching { SecurityEventComponentState.valueOf(locationState) }
+        .getOrDefault(SecurityEventComponentState.FAILED),
+    runCatching { SecurityEventComponentState.valueOf(emailState) }
+        .getOrDefault(SecurityEventComponentState.FAILED)
 )
 
 private fun IntruderLog.toEntity() = IntruderLogEntity(
     id, eventId, photoCaptured, locationCaptured, timestamp, photoPath,
-    latitude, longitude, address, emailSent, statusMessage
+    latitude, longitude, address, emailSent, statusMessage,
+    photoState.name, locationState.name, emailState.name
 )
