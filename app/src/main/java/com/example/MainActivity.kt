@@ -17,6 +17,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -120,13 +121,12 @@ import com.example.i18n.isRtl
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var viewModel: SecurityViewModel
+    private val viewModel: SecurityViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        viewModel = SecurityViewModel(this)
         val languageStore = LanguageStore(this)
         applyLanguage(languageStore.get())
 
@@ -157,9 +157,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::viewModel.isInitialized) {
-            viewModel.resumeProtectionFromVisibleActivity()
-        }
+        viewModel.resumeProtectionFromVisibleActivity()
     }
 
     private fun applyLanguage(language: AppLanguage) {

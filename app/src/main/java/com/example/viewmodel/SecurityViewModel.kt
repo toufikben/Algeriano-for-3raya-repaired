@@ -2,17 +2,17 @@ package com.example.viewmodel
 
 import com.example.R
 
+import android.app.Application
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
 import android.util.Patterns
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.CountdownDiagnosticEvent
 import com.example.data.IntruderLog
@@ -51,7 +51,9 @@ data class SecurityUiState(
     val countdownDiagnostics: List<CountdownDiagnosticEvent> = emptyList()
 )
 
-class SecurityViewModel(private val context: Context) : ViewModel() {
+class SecurityViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val context = application.applicationContext
 
     private val prefs = SecurityPrefs.getInstance(context)
 
@@ -154,7 +156,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
             return
         }
 
-        saveCredentials()
+        if (enabled && !saveCredentials()) return
         prefs.isTrackingEnabled = enabled
         if (!enabled) {
             prefs.resetFailedUnlockAttempts()
@@ -203,7 +205,7 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
         }
 
         viewModelScope.launch {
-            delay(4500)
+            delay(6500)
             _uiState.update { it.copy(isTesting = false) }
         }
     }
@@ -251,6 +253,8 @@ class SecurityViewModel(private val context: Context) : ViewModel() {
     fun clearLogs() {
         viewModelScope.launch(Dispatchers.IO) {
             prefs.clearLogs()
+            context.getExternalFilesDir(null)?.resolve("intruder_photos")?.listFiles()
+                ?.forEach { it.delete() }
         }
     }
 
