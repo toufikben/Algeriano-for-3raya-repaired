@@ -64,6 +64,7 @@ class CameraForegroundService : Service() {
 
     companion object {
         const val ACTION_CAPTURE_AND_SEND = "com.example.action.CAPTURE_AND_SEND"
+        const val ACTION_SEND_PENDING = "com.example.action.SEND_PENDING"
         const val ACTION_COUNTDOWN_EXPIRED = "com.example.action.COUNTDOWN_EXPIRED"
         const val ACTION_START_MONITORING = "com.example.action.START_MONITORING"
         const val ACTION_TEST_CAPTURE = "com.example.action.TEST_CAPTURE"
@@ -81,6 +82,7 @@ class CameraForegroundService : Service() {
     private var backgroundThread: HandlerThread? = null
     private var backgroundHandler: Handler? = null
     private var foregroundStarted = false
+    private var foregroundNeedsCamera = true
 
     override fun onCreate() {
         super.onCreate()
@@ -92,6 +94,7 @@ class CameraForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action ?: ACTION_CAPTURE_AND_SEND
+        foregroundNeedsCamera = action != ACTION_SEND_PENDING
         Log.d(TAG, "onStartCommand action: $action")
 
         if (action == ACTION_STOP_MONITORING) {
@@ -143,7 +146,7 @@ class CameraForegroundService : Service() {
         }
 
         when (action) {
-            ACTION_CAPTURE_AND_SEND, ACTION_COUNTDOWN_EXPIRED, ACTION_TEST_CAPTURE -> {
+            ACTION_CAPTURE_AND_SEND, ACTION_SEND_PENDING, ACTION_COUNTDOWN_EXPIRED, ACTION_TEST_CAPTURE -> {
                 val isTest = action == ACTION_TEST_CAPTURE
                 val eventId = intent?.getStringExtra(EXTRA_SECURITY_EVENT_ID)
                 processIntruderCapture(isTest, action == ACTION_COUNTDOWN_EXPIRED, eventId)
@@ -174,7 +177,7 @@ class CameraForegroundService : Service() {
         ) == PackageManager.PERMISSION_GRANTED
 
         val foregroundServiceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            (if (hasCameraPermission) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0) or
+            (if (hasCameraPermission && foregroundNeedsCamera) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0) or
                 if (hasLocationPermission) {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
                 } else {

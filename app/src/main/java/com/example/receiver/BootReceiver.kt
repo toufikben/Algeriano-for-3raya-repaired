@@ -14,6 +14,7 @@ import com.example.MainActivity
 import com.example.R
 import com.example.SecurityApp
 import com.example.data.SecurityPrefs
+import com.example.data.SecurityEventStatus
 import com.example.service.CameraForegroundService
 import com.example.worker.SecurityEventDistributor
 
@@ -26,14 +27,19 @@ class BootReceiver : BroadcastReceiver() {
         if (Intent.ACTION_BOOT_COMPLETED == action || "android.intent.action.QUICKBOOT_POWERON" == action) {
             val prefs = SecurityPrefs.getInstance(context)
             CountdownScheduler.rescheduleFromPrefs(context)
+            prefs.recoverStaleSecurityEvents()
             if (prefs.isTrackingEnabled) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     // Android 14+ restricts camera foreground-service starts from
                     // BOOT_COMPLETED. Do not enqueue a Worker that would repeatedly
                     // attempt the same forbidden background start. Pending events
                     // remain durable and are enqueued when the user opens the app.
+                    SecurityEventDistributor.enqueueAfterReboot(context)
+                    val needsVisibleCapture = prefs.getPendingSecurityEvents().any {
+                        it.status == SecurityEventStatus.PENDING || it.status == SecurityEventStatus.DEFERRED
+                    }
                     Log.w("BootReceiver", "Protection requires a visible app start after boot")
-                    postResumeNotification(context)
+                    if (needsVisibleCapture) postResumeNotification(context)
                     return
                 }
                 SecurityEventDistributor.enqueuePending(context)

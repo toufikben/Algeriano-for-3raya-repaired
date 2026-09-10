@@ -15,6 +15,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.example.data.SecurityPrefs
+import com.example.data.SecurityEventStatus
 import com.example.MainActivity
 import com.example.R
 import com.example.SecurityApp
@@ -65,6 +66,19 @@ object SecurityEventDistributor {
 
     fun enqueuePending(context: Context) {
         SecurityPrefs.getInstance(context).getPendingSecurityEvents()
+            .forEach { enqueue(context, it.id) }
+    }
+
+    /**
+     * Rebuilds only reboot-safe work. Camera capture remains deferred until a
+     * visible Activity starts it, while already-captured events can continue
+     * through the durable send/retry path.
+     */
+    fun enqueueAfterReboot(context: Context) {
+        val prefs = SecurityPrefs.getInstance(context)
+        prefs.recoverStaleSecurityEvents()
+        prefs.getPendingSecurityEvents()
+            .filter { it.status == SecurityEventStatus.SEND_PENDING || it.status == SecurityEventStatus.FAILED_RETRYABLE }
             .forEach { enqueue(context, it.id) }
     }
 
@@ -153,7 +167,10 @@ class SecurityEventWorker(
         // on Android 14+. Keep the durable event pending; the next visible app
         // session will enqueue it again instead of converting this policy block
         // into a failed security event or an endless retry loop.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
+            event.status != SecurityEventStatus.SEND_PENDING &&
+            event.status != SecurityEventStatus.FAILED_RETRYABLE
+        ) {
             prefs.deferSecurityEvent(event.id)
             SecurityEventDistributor.notifyDeferredCapture(applicationContext, event.id)
             return Result.success()
@@ -161,7 +178,13 @@ class SecurityEventWorker(
 
         return try {
             val intent = Intent(applicationContext, CameraForegroundService::class.java).apply {
-                action = CameraForegroundService.ACTION_CAPTURE_AND_SEND
+                action = if (event.status == SecurityEventStatus.SEND_PENDING ||
+                    event.status == SecurityEventStatus.FAILED_RETRYABLE
+                ) {
+                    CameraForegroundService.ACTION_SEND_PENDING
+                } else {
+                    CameraForegroundService.ACTION_CAPTURE_AND_SEND
+                }
                 putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, event.id)
             }
             ContextCompat.startForegroundService(applicationContext, intent)
