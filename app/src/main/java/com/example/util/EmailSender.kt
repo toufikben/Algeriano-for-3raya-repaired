@@ -1,6 +1,7 @@
 package com.example.util
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import com.example.R
 
 import java.io.File
@@ -42,6 +43,13 @@ object EmailSender {
             // FIX: blank credentials can never succeed — mark non-retryable
             // so callers go straight to FAILED_FINAL instead of 3 retries.
             return SendResult(false, context.getString(R.string.ui_16b9f058a24f), retryable = false)
+        }
+        if (imageFile != null && !isValidJpegFile(imageFile)) {
+            return SendResult(
+                false,
+                context.getString(R.string.ui_invalid_image_attachment),
+                retryable = false
+            )
         }
 
         return try {
@@ -168,5 +176,25 @@ object EmailSender {
             }
         }
         return parts.joinToString(" <- ").take(300)
+    }
+
+    private fun isValidJpegFile(file: File): Boolean {
+        if (!file.isFile || file.length() < 4L) return false
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return false
+        return runCatching {
+            file.inputStream().use { input ->
+                val head = ByteArray(2)
+                val tail = ByteArray(2)
+                if (input.read(head) != 2) return false
+                input.skip(file.length().coerceAtLeast(2L) - 4L)
+                if (input.read(tail) != 2) return false
+                (head[0].toInt() and 0xFF) == 0xFF &&
+                    (head[1].toInt() and 0xFF) == 0xD8 &&
+                    (tail[0].toInt() and 0xFF) == 0xFF &&
+                    (tail[1].toInt() and 0xFF) == 0xD9
+            }
+        }.getOrDefault(false)
     }
 }

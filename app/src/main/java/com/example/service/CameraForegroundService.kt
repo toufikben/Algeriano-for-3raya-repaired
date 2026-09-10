@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
@@ -610,14 +611,29 @@ class CameraForegroundService : Service() {
                     val bytes = ByteArray(buffer.remaining())
                     buffer.get(bytes)
 
+                    if (!isValidJpeg(bytes)) {
+                        Log.e(TAG, "Camera returned invalid JPEG stream: ${bytes.size} bytes")
+                        if (!captureCompleted.isCompleted) captureCompleted.complete(null)
+                        return@setOnImageAvailableListener
+                    }
+
                     val picturesDir = File(getExternalFilesDir(null), "intruder_photos")
                     if (!picturesDir.exists()) picturesDir.mkdirs()
 
                     val fileName = "capture_${System.currentTimeMillis()}.jpg"
                     val file = File(picturesDir, fileName)
-                    FileOutputStream(file).use { fos ->
+                    val temporaryFile = File(picturesDir, "$fileName.tmp")
+                    FileOutputStream(temporaryFile).use { fos ->
                         fos.write(bytes)
                         fos.flush()
+                        fos.fd.sync()
+                    }
+                    if (!temporaryFile.renameTo(file) || !isValidJpegFile(file)) {
+                        temporaryFile.delete()
+                        file.delete()
+                        Log.e(TAG, "Persisted camera JPEG failed validation")
+                        if (!captureCompleted.isCompleted) captureCompleted.complete(null)
+                        return@setOnImageAvailableListener
                     }
                     outputFile = file
                     if (!captureCompleted.isCompleted) {
@@ -737,6 +753,22 @@ class CameraForegroundService : Service() {
             closeCamera()
             null
         }
+    }
+
+    private fun isValidJpeg(bytes: ByteArray): Boolean {
+        if (bytes.size < 4) return false
+        val startsWithJpeg = bytes[0].toInt() and 0xFF == 0xFF &&
+            bytes[1].toInt() and 0xFF == 0xD8
+        val endsWithJpeg = bytes[bytes.lastIndex - 1].toInt() and 0xFF == 0xFF &&
+            bytes[bytes.lastIndex].toInt() and 0xFF == 0xD9
+        return startsWithJpeg && endsWithJpeg
+    }
+
+    private fun isValidJpegFile(file: File): Boolean {
+        if (!file.isFile || file.length() < 4L) return false
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, bounds)
+        return bounds.outWidth > 0 && bounds.outHeight > 0
     }
 
     private suspend fun fetchCurrentLocation(): Location? = withContext(Dispatchers.IO) {
