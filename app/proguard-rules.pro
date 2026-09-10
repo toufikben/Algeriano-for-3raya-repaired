@@ -19,3 +19,12 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# JavaMail discovers SMTP providers through META-INF resources and reflection.
+# Keep both the provider implementation and registry in minified release builds.
+-keep class com.sun.mail.** { *; }
+-keep class javax.mail.** { *; }
+-keep class javax.activation.** { *; }
+-keepresourcefiles META-INF/javamail.providers
+-keepresourcefiles META-INF/javamail.default.providers
+-keepattributes Exceptions,InnerClasses,Signature

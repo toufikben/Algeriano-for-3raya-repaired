@@ -668,7 +668,7 @@ class CameraForegroundService : Service() {
                                                     closeCamera()
                                                 }
                                             }
-                                        }, 600L)
+                                        }, 1000L)
                                     } catch (e: CameraAccessException) {
                                         Log.e(TAG, "Capture failed", e)
                                         if (!captureCompleted.isCompleted) {
@@ -719,9 +719,9 @@ class CameraForegroundService : Service() {
             captureCompleted.complete(null)
         }
 
-        // Wait with a 6-second timeout
+        // Allow slow front-camera HALs enough time after AE/AWB/AF warm-up.
         try {
-            val capturedFile = kotlinx.coroutines.withTimeoutOrNull(6000L) {
+            val capturedFile = kotlinx.coroutines.withTimeoutOrNull(10_000L) {
                 captureCompleted.await()
             }
             if (capturedFile == null) {

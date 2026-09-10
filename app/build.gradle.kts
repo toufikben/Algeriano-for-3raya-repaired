@@ -70,6 +70,10 @@ android {
         "META-INF/LICENSE.txt",
         "META-INF/NOTICE.txt"
       )
+      pickFirsts += listOf(
+        "META-INF/javamail.providers",
+        "META-INF/javamail.default.providers"
+      )
     }
   }
   dependenciesInfo {

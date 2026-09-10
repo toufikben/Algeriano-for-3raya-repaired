@@ -12,6 +12,7 @@ import javax.mail.AuthenticationFailedException
 import javax.mail.Message
 import javax.mail.Multipart
 import javax.mail.PasswordAuthentication
+import javax.mail.Provider
 import javax.mail.Session
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeBodyPart
@@ -69,6 +70,19 @@ object EmailSender {
                     return PasswordAuthentication(senderEmail.trim(), cleanPassword)
                 }
             })
+            // Android release shrinking can remove JavaMail's provider registry.
+            // Register SMTP explicitly so getTransport("smtp") is deterministic.
+            if (session.getProvider("smtp") == null) {
+                session.addProvider(
+                    Provider(
+                        Provider.Type.TRANSPORT,
+                        "smtp",
+                        "com.sun.mail.smtp.SMTPTransport",
+                        "Eclipse Angus / JavaMail",
+                        "1.6.7"
+                    )
+                )
+            }
 
             val message = MimeMessage(session).apply {
                 setFrom(InternetAddress(senderEmail.trim(), context.getString(R.string.ui_6dc6e4eefce8)))
@@ -122,7 +136,7 @@ object EmailSender {
             System.err.println("EmailSender: SMTP authentication failed")
             SendResult(false, context.getString(R.string.ui_464e2cc141b1), retryable = false)
         } catch (e: MessagingException) {
-            val detail = e.message?.take(160).orEmpty()
+            val detail = smtpDiagnostic(e)
             val authenticationFailure = detail.contains("535") ||
                 detail.contains("534") || detail.contains("5.7.8")
             System.err.println("EmailSender: SMTP messaging failure ${e.javaClass.simpleName}: $detail")
@@ -132,7 +146,7 @@ object EmailSender {
                 retryable = !authenticationFailure
             )
         } catch (e: Exception) {
-            val detail = e.message?.take(160).orEmpty()
+            val detail = smtpDiagnostic(e)
             System.err.println("EmailSender: SMTP send failed: ${e.javaClass.simpleName}: $detail")
             SendResult(
                 false,
@@ -140,5 +154,19 @@ object EmailSender {
                 retryable = true
             )
         }
+    }
+
+    private fun smtpDiagnostic(error: Throwable): String {
+        val parts = mutableListOf<String>()
+        var current: Throwable? = error
+        repeat(4) {
+            current?.let { throwable ->
+                val text = throwable.message?.takeIf { it.isNotBlank() }
+                parts += if (text == null) throwable.javaClass.simpleName
+                else "${throwable.javaClass.simpleName}: $text"
+                current = throwable.cause
+            }
+        }
+        return parts.joinToString(" <- ").take(300)
     }
 }
