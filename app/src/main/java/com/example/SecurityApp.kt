@@ -8,6 +8,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
+import android.util.Log
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -39,14 +40,21 @@ class SecurityApp : Application() {
     }
 
     private fun schedulePhotoCleanup() {
-        val request = PeriodicWorkRequestBuilder<PhotoCleanupWorker>(7, TimeUnit.DAYS)
-            .setInitialDelay(7, TimeUnit.DAYS)
-            .build()
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            PhotoCleanupWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
-            request
-        )
+        runCatching {
+            val request = PeriodicWorkRequestBuilder<PhotoCleanupWorker>(7, TimeUnit.DAYS)
+                .setInitialDelay(7, TimeUnit.DAYS)
+                .build()
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                PhotoCleanupWorker.WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                request
+            )
+        }.onFailure { error ->
+            // WorkManager is normally initialized by its provider before the
+            // application starts. Do not crash startup in test hosts or
+            // custom hosts that initialize it later.
+            Log.w("SecurityApp", "Photo cleanup scheduling deferred", error)
+        }
     }
 
     private fun createNotificationChannels() {
