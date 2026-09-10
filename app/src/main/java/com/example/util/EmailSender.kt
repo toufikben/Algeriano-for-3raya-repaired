@@ -92,8 +92,14 @@ object EmailSender {
                 if (imageFile != null && imageFile.exists() && imageFile.length() > 0) {
                     val attachmentPart = MimeBodyPart().apply {
                         val source = FileDataSource(imageFile)
+                        // FIX(email): explicit JPEG type + attachment disposition.
+                        // Default octet-stream caused some Gmail clients to
+                        // drop/preview-fail the intruder photo.
                         dataHandler = DataHandler(source)
                         fileName = "intruder_snapshot.jpg"
+                        setHeader("Content-Type", "image/jpeg; name=\"intruder_snapshot.jpg\"")
+                        setHeader("Content-Transfer-Encoding", "base64")
+                        disposition = MimeBodyPart.ATTACHMENT
                     }
                     multipart.addBodyPart(attachmentPart)
                 }

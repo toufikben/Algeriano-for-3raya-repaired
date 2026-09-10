@@ -68,6 +68,9 @@ class CountdownReceiver : BroadcastReceiver() {
                     } catch (e: Exception) {
                         prefs.recordCountdownDiagnostic("retry", "scheduled", "receiver_service_start:${e.javaClass.simpleName}")
                         CaptureRetryWorker.enqueue(context)
+                        // FIX(countdown): background start denied — notify user
+                        // to open the app so visible dispatch can complete it.
+                        CountdownScheduler.postTapToComplete(context)
                     }
                 } else {
                     prefs.recordCountdownDiagnostic("expired", "ignored", "countdown_not_active")
@@ -203,8 +206,12 @@ object CountdownScheduler {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
                 prefs.recordCountdownDiagnostic("schedule", "success", "$kind:exact_allow_while_idle")
             } else {
+                // FIX(countdown): record WHY inexact was used. On Android 12+
+                // this is almost always missing Exact-Alarm permission, which
+                // drifts long timers. User must grant it in Settings.
+                val reason = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) "no_exact_permission" else "pre_S"
                 alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
-                prefs.recordCountdownDiagnostic("schedule", "success", "$kind:allow_while_idle")
+                prefs.recordCountdownDiagnostic("schedule", "success", "$kind:allow_while_idle:$reason")
             }
         } catch (e: SecurityException) {
             prefs.recordCountdownDiagnostic("schedule", "fallback", "$kind:exact_security_exception:${e.message}")
@@ -230,4 +237,39 @@ object CountdownScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
+
+    /**
+     * FIX(countdown): when a background FGS start is denied, the capture
+     * stays pending until the app becomes visible. This notification gives
+     * the user a one-tap path to open the app and let
+     * dispatchPendingFromVisibleContext finish it.
+     */
+    fun postTapToComplete(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) return
+        if (!androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) return
+        val openIntent = PendingIntent.getActivity(
+            context,
+            OPEN_REQUEST_CODE,
+            Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, SecurityApp.CHANNEL_ID_ALERTS)
+            .setSmallIcon(R.drawable.ic_launcher_foreground_img_1787338860864)
+            .setContentTitle(context.getString(R.string.ui_98c4ee03d7e4))
+            .setContentText(context.getString(R.string.ui_0b183fd63f65))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.ui_226510ac7ba6)))
+            .setContentIntent(openIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        androidx.core.app.NotificationManagerCompat.from(context)
+            .notify(TAP_TO_COMPLETE_NOTIFICATION_ID, notification)
+    }
+
+    private const val TAP_TO_COMPLETE_NOTIFICATION_ID = 4105
 }

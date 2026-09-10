@@ -254,6 +254,23 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
             _uiState.update { it.copy(bannerMessage = context.getString(com.example.R.string.ui_353209d98cda)) }
             return
         }
+        // FIX(countdown): on Android 12+ an inexact alarm drifts long timers.
+        // Send the user once to Settings to grant Exact Alarms, then still
+        // start (inexact) so protection is never silently off.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager
+            if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+                prefs.recordCountdownDiagnostic("schedule", "warning", "starting_inexact_without_exact_permission")
+                runCatching {
+                    context.startActivity(
+                        Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                            data = android.net.Uri.parse("package:${context.packageName}")
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                    )
+                }
+            }
+        }
         CountdownScheduler.start(context, durationMillis)
         _uiState.update {
             it.copy(

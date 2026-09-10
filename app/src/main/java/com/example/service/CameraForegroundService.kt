@@ -785,7 +785,9 @@ class CameraForegroundService : Service() {
         return try {
             val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
             powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "IntruderApp::CaptureWakeLock")?.apply {
-                acquire(15000)
+                // FIX(email): 15s was shorter than camera(6s)+location(7s parallel)
+                // + SMTP connect(15s)+read(15s). Device slept mid-send in Doze.
+                acquire(60_000)
             }
         } catch (e: Exception) {
             null
