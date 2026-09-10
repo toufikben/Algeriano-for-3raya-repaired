@@ -1,1 +1,116 @@
-cGFja2FnZSBjb20uZXhhbXBsZS51dGlsCgppbXBvcnQgYW5kcm9pZC5jb250ZW50LkNvbnRleHQKaW1wb3J0IGNvbS5leGFtcGxlLlIKCmltcG9ydCBqYXZhLmlvLkZpbGUKaW1wb3J0IGphdmEudXRpbC5Qcm9wZXJ0aWVzCmltcG9ydCBqYXZheC5hY3RpdmF0aW9uLkRhdGFIYW5kbGVyCmltcG9ydCBqYXZheC5hY3RpdmF0aW9uLkZpbGVEYXRhU291cmNlCmltcG9ydCBqYXZheC5tYWlsLkF1dGhlbnRpY2F0b3IKaW1wb3J0IGphdmF4Lm1haWwuQXV0aGVudGljYXRpb25GYWlsZWRFeGNlcHRpb24KaW1wb3J0IGphdmF4Lm1haWwuTWVzc2FnZQppbXBvcnQgamF2YXgubWFpbC5NdWx0aXBhcnQKaW1wb3J0IGphdmF4Lm1haWwuUGFzc3dvcmRBdXRoZW50aWNhdGlvbgppbXBvcnQgamF2YXgubWFpbC5TZXNzaW9uCmltcG9ydCBqYXZheC5tYWlsLmludGVybmV0LkludGVybmV0QWRkcmVzcwppbXBvcnQgamF2YXgubWFpbC5pbnRlcm5ldC5NaW1lQm9keVBhcnQKaW1wb3J0IGphdmF4Lm1haWwuaW50ZXJuZXQuTWltZU1lc3NhZ2UKaW1wb3J0IGphdmF4Lm1haWwuaW50ZXJuZXQuTWltZU11bHRpcGFydAoKb2JqZWN0IEVtYWlsU2VuZGVyIHsKCiAgICBkYXRhIGNsYXNzIFNlbmRSZXN1bHQoCiAgICAgICAgdmFsIGlzU3VjY2VzczogQm9vbGVhbiwKICAgICAgICB2YWwgZXJyb3JNZXNzYWdlOiBTdHJpbmc/ID0gbnVsbCwKICAgICAgICB2YWwgcmV0cnlhYmxlOiBCb29sZWFuID0gdHJ1ZQogICAgKQoKICAgIGZ1biBzZW5kU2VjdXJpdHlBbGVydCgKICAgICAgICBjb250ZXh0OiBDb250ZXh0LAogICAgICAgIHNlbmRlckVtYWlsOiBTdHJpbmcsCiAgICAgICAgYXBwUGFzc3dvcmQ6IFN0cmluZywKICAgICAgICByZWNpcGllbnRFbWFpbDogU3RyaW5nLAogICAgICAgIHN1YmplY3Q6IFN0cmluZywKICAgICAgICBib2R5VGV4dDogU3RyaW5nLAogICAgICAgIGltYWdlRmlsZTogRmlsZT8gPSBudWxsLAogICAgICAgIGV2ZW50SWQ6IFN0cmluZz8gPSBudWxsCiAgICApOiBTZW5kUmVzdWx0IHsKICAgICAgICBpZiAoc2VuZGVyRW1haWwuaXNCbGFuaygpIHx8IGFwcFBhc3N3b3JkLmlzQmxhbmsoKSkgewogICAgICAgICAgICByZXR1cm4gU2VuZFJlc3VsdChmYWxzZSwgY29udGV4dC5nZXRTdHJpbmcoUi5zdHJpbmcudWlfMTZiOWYwNThhMjRmKSkKICAgICAgICB9CgogICAgICAgIHJldHVybiB0cnkgewogICAgICAgICAgICB2YWwgcHJvcHMgPSBQcm9wZXJ0aWVzKCkuYXBwbHkgewogICAgICAgICAgICAgICAgcHV0KCJtYWlsLnNtdHAuaG9zdCIsICJzbXRwLmdtYWlsLmNvbSIpCiAgICAgICAgICAgICAgICBwdXQoIm1haWwuc210cC5wb3J0IiwgIjU4NyIpCiAgICAgICAgICAgICAgICBwdXQoIm1haWwuc210cC5hdXRoIiwgInRydWUiKQogICAgICAgICAgICAgICAgcHV0KCJtYWlsLnNtdHAuc3RhcnR0bHMuZW5hYmxlIiwgInRydWUiKQogICAgICAgICAgICAgICAgLy8gT3Bwb3J0dW5pc3RpYyBTVEFSVFRMUyBhbG9uZSBjYW4gYmUgc3RyaXBwZWQgYnkgYSBuZXR3b3JrCiAgICAgICAgICAgICAgICAvLyBkb3duZ3JhZGUuIFJlcXVpcmUgVExTIHRvIGFjdHVhbGx5IGJlIG5lZ290aWF0ZWQgYW5kIHZlcmlmeQogICAgICAgICAgICAgICAgLy8gdGhlIHNlcnZlciBjZXJ0aWZpY2F0ZSBiZWZvcmUgYW55IGNyZWRlbnRpYWxzIG9yIGF0dGFjaG1lbnQKICAgICAgICAgICAgICAgIC8vIGRhdGEgYXJlIHNlbnQuCiAgICAgICAgICAgICAgICBwdXQoIm1haWwuc210cC5zdGFydHRscy5yZXF1aXJlZCIsICJ0cnVlIikKICAgICAgICAgICAgICAgIHB1dCgibWFpbC5zbXRwLnNzbC5wcm90b2NvbHMiLCAiVExTdjEuMiIpCiAgICAgICAgICAgICAgICBwdXQoIm1haWwuc210cC5zc2wuY2hlY2tzZXJ2ZXJpZGVudGl0eSIsICJ0cnVlIikKICAgICAgICAgICAgICAgIHB1dCgibWFpbC5zbXRwLnNzbC50cnVzdCIsICJzbXRwLmdtYWlsLmNvbSIpCiAgICAgICAgICAgICAgICBwdXQoIm1haWwuc210cC5jb25uZWN0aW9udGltZW91dCIsICIxNTAwMCIpCiAgICAgICAgICAgICAgICBwdXQoIm1haWwuc210cC50aW1lb3V0IiwgIjE1MDAwIikKICAgICAgICAgICAgfQoKICAgICAgICAgICAgdmFsIGNsZWFuUGFzc3dvcmQgPSBhcHBQYXNzd29yZC5yZXBsYWNlKCIgIiwgIiIpLnRyaW0oKQoKICAgICAgICAgICAgdmFsIHNlc3Npb24gPSBTZXNzaW9uLmdldEluc3RhbmNlKHByb3BzLCBvYmplY3QgOiBBdXRoZW50aWNhdG9yKCkgewogICAgICAgICAgICAgICAgb3ZlcnJpZGUgZnVuIGdldFBhc3N3b3JkQXV0aGVudGljYXRpb24oKTogUGFzc3dvcmRBdXRoZW50aWNhdGlvbiB7CiAgICAgICAgICAgICAgICAgICAgcmV0dXJuIFBhc3N3b3JkQXV0aGVudGljYXRpb24oc2VuZGVyRW1haWwudHJpbSgpLCBjbGVhblBhc3N3b3JkKQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9KQoKICAgICAgICAgICAgdmFsIG1lc3NhZ2UgPSBNaW1lTWVzc2FnZShzZXNzaW9uKS5hcHBseSB7CiAgICAgICAgICAgICAgICBzZXRGcm9tKEludGVybmV0QWRkcmVzcyhzZW5kZXJFbWFpbC50cmltKCksIGNvbnRleHQuZ2V0U3RyaW5nKFIuc3RyaW5nLnVpXzZkYzZlNGVlZmNlOCkpKQogICAgICAgICAgICAgICAgc2V0UmVjaXBpZW50cyhNZXNzYWdlLlJlY2lwaWVudFR5cGUuVE8sIEludGVybmV0QWRkcmVzcy5wYXJzZShyZWNpcGllbnRFbWFpbC50cmltKCkpKQogICAgICAgICAgICAgICAgc2V0U3ViamVjdChzdWJqZWN0LCAiVVRGLTgiKQogICAgICAgICAgICAgICAgZXZlbnRJZD8ubGV0IHsKICAgICAgICAgICAgICAgICAgICBzZXRIZWFkZXIoIlgtU2VjdXJpdHktRXZlbnQtSWQiLCBpdCkKICAgICAgICAgICAgICAgICAgICBzZXRIZWFkZXIoIk1lc3NhZ2UtSUQiLCAiPCRpdEBwaG9uZS1mb3J0cmVzcy1zZWN1cml0eS5sb2NhbD4iKQogICAgICAgICAgICAgICAgfQoKICAgICAgICAgICAgICAgIHZhbCBtdWx0aXBhcnQ6IE11bHRpcGFydCA9IE1pbWVNdWx0aXBhcnQoKQoKICAgICAgICAgICAgICAgIHZhbCB0ZXh0UGFydCA9IE1pbWVCb2R5UGFydCgpLmFwcGx5IHsKICAgICAgICAgICAgICAgICAgICBzZXRUZXh0KGJvZHlUZXh0LCAiVVRGLTgiLCAicGxhaW4iKQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgbXVsdGlwYXJ0LmFkZEJvZHlQYXJ0KHRleHRQYXJ0KQoKICAgICAgICAgICAgICAgIGlmIChpbWFnZUZpbGUgIT0gbnVsbCAmJiBpbWFnZUZpbGUuZXhpc3RzKCkgJiYgaW1hZ2VGaWxlLmxlbmd0aCgpID4gMCkgewogICAgICAgICAgICAgICAgICAgIHZhbCBhdHRhY2htZW50UGFydCA9IE1pbWVCb2R5UGFydCgpLmFwcGx5IHsKICAgICAgICAgICAgICAgICAgICAgICAgdmFsIHNvdXJjZSA9IEZpbGVEYXRhU291cmNlKGltYWdlRmlsZSkKICAgICAgICAgICAgICAgICAgICAgICAgZGF0YUhhbmRsZXIgPSBEYXRhSGFuZGxlcihzb3VyY2UpCiAgICAgICAgICAgICAgICAgICAgICAgIGZpbGVOYW1lID0gImludHJ1ZGVyX3NuYXBzaG90LmpwZyIKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgbXVsdGlwYXJ0LmFkZEJvZHlQYXJ0KGF0dGFjaG1lbnRQYXJ0KQogICAgICAgICAgICAgICAgfQoKICAgICAgICAgICAgICAgIHNldENvbnRlbnQobXVsdGlwYXJ0KQogICAgICAgICAgICB9CgogICAgICAgICAgICB2YWwgdHJhbnNwb3J0ID0gc2Vzc2lvbi5nZXRUcmFuc3BvcnQoInNtdHAiKQogICAgICAgICAgICB0cnkgewogICAgICAgICAgICAgICAgdHJhbnNwb3J0LmNvbm5lY3Qoc2VuZGVyRW1haWwudHJpbSgpLCBjbGVhblBhc3N3b3JkKQogICAgICAgICAgICAgICAgdHJhbnNwb3J0LnNlbmRNZXNzYWdlKG1lc3NhZ2UsIG1lc3NhZ2UuYWxsUmVjaXBpZW50cykKICAgICAgICAgICAgICAgIFNlbmRSZXN1bHQodHJ1ZSkKICAgICAgICAgICAgfSBmaW5hbGx5IHsKICAgICAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICAgICAgaWYgKHRyYW5zcG9ydC5pc0Nvbm5lY3RlZCkgdHJhbnNwb3J0LmNsb3NlKCkKICAgICAgICAgICAgICAgIH0gY2F0Y2ggKF86IEV4Y2VwdGlvbikgewogICAgICAgICAgICAgICAgICAgIC8vIFRoZSBzZW5kIHJlc3VsdCBzaG91bGQgbm90IGJlIHJlcGxhY2VkIGJ5IGEgY2xvc2UgZmFpbHVyZS4KICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfQogICAgICAgIH0gY2F0Y2ggKGU6IEF1dGhlbnRpY2F0aW9uRmFpbGVkRXhjZXB0aW9uKSB7CiAgICAgICAgICAgIFN5c3RlbS5lcnIucHJpbnRsbigiRW1haWxTZW5kZXI6IFNNVFAgYXV0aGVudGljYXRpb24gZmFpbGVkIikKICAgICAgICAgICAgU2VuZFJlc3VsdChmYWxzZSwgY29udGV4dC5nZXRTdHJpbmcoUi5zdHJpbmcudWlfNDY0ZTJjYzE0MWIxKSwgcmV0cnlhYmxlID0gZmFsc2UpCiAgICAgICAgfSBjYXRjaCAoZTogRXhjZXB0aW9uKSB7CiAgICAgICAgICAgIFN5c3RlbS5lcnIucHJpbnRsbigiRW1haWxTZW5kZXI6IFNNVFAgc2VuZCBmYWlsZWQ6ICR7ZS5qYXZhQ2xhc3Muc2ltcGxlTmFtZX0iKQogICAgICAgICAgICBTZW5kUmVzdWx0KGZhbHNlLCBjb250ZXh0LmdldFN0cmluZyhSLnN0cmluZy51aV9lY2U5NGUzM2VjNTcpKQogICAgICAgIH0KICAgIH0KfQo=
+package com.example.util
+
+import android.content.Context
+import com.example.R
+
+import java.io.File
+import java.util.Properties
+import javax.activation.DataHandler
+import javax.activation.FileDataSource
+import javax.mail.Authenticator
+import javax.mail.AuthenticationFailedException
+import javax.mail.Message
+import javax.mail.Multipart
+import javax.mail.PasswordAuthentication
+import javax.mail.Session
+import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeBodyPart
+import javax.mail.internet.MimeMessage
+import javax.mail.internet.MimeMultipart
+
+object EmailSender {
+
+    data class SendResult(
+        val isSuccess: Boolean,
+        val errorMessage: String? = null,
+        val retryable: Boolean = true
+    )
+
+    fun sendSecurityAlert(
+        context: Context,
+        senderEmail: String,
+        appPassword: String,
+        recipientEmail: String,
+        subject: String,
+        bodyText: String,
+        imageFile: File? = null,
+        eventId: String? = null
+    ): SendResult {
+        if (senderEmail.isBlank() || appPassword.isBlank()) {
+            return SendResult(false, context.getString(R.string.ui_16b9f058a24f))
+        }
+
+        return try {
+            val props = Properties().apply {
+                put("mail.smtp.host", "smtp.gmail.com")
+                put("mail.smtp.port", "587")
+                put("mail.smtp.auth", "true")
+                put("mail.smtp.starttls.enable", "true")
+                // Opportunistic STARTTLS alone can be stripped by a network
+                // downgrade. Require TLS to actually be negotiated and verify
+                // the server certificate before any credentials or attachment
+                // data are sent.
+                put("mail.smtp.starttls.required", "true")
+                put("mail.smtp.ssl.protocols", "TLSv1.2")
+                put("mail.smtp.ssl.checkserveridentity", "true")
+                put("mail.smtp.connectiontimeout", "15000")
+                put("mail.smtp.timeout", "15000")
+            }
+
+            val cleanPassword = appPassword.replace(" ", "").trim()
+
+            val session = Session.getInstance(props, object : Authenticator() {
+                override fun getPasswordAuthentication(): PasswordAuthentication {
+                    return PasswordAuthentication(senderEmail.trim(), cleanPassword)
+                }
+            })
+
+            val message = MimeMessage(session).apply {
+                setFrom(InternetAddress(senderEmail.trim(), context.getString(R.string.ui_6dc6e4eefce8)))
+                setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail.trim()))
+                setSubject(subject, "UTF-8")
+                eventId?.let {
+                    setHeader("X-Security-Event-Id", it)
+                    setHeader("Message-ID", "<$it@phone-fortress-security.local>")
+                }
+
+                val multipart: Multipart = MimeMultipart()
+
+                val textPart = MimeBodyPart().apply {
+                    setText(bodyText, "UTF-8", "plain")
+                }
+                multipart.addBodyPart(textPart)
+
+                if (imageFile != null && imageFile.exists() && imageFile.length() > 0) {
+                    val attachmentPart = MimeBodyPart().apply {
+                        val source = FileDataSource(imageFile)
+                        dataHandler = DataHandler(source)
+                        fileName = "intruder_snapshot.jpg"
+                    }
+                    multipart.addBodyPart(attachmentPart)
+                }
+
+                setContent(multipart)
+            }
+
+            val transport = session.getTransport("smtp")
+            try {
+                transport.connect(senderEmail.trim(), cleanPassword)
+                transport.sendMessage(message, message.allRecipients)
+                SendResult(true)
+            } finally {
+                try {
+                    if (transport.isConnected) transport.close()
+                } catch (_: Exception) {
+                    // The send result should not be replaced by a close failure.
+                }
+            }
+        } catch (e: AuthenticationFailedException) {
+            System.err.println("EmailSender: SMTP authentication failed")
+            SendResult(false, context.getString(R.string.ui_464e2cc141b1), retryable = false)
+        } catch (e: Exception) {
+            System.err.println("EmailSender: SMTP send failed: ${e.javaClass.simpleName}")
+            SendResult(false, context.getString(R.string.ui_ece94e33ec57))
+        }
+    }
+}

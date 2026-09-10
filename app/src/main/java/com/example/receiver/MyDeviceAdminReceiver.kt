@@ -1,1 +1,76 @@
-cGFja2FnZSBjb20uZXhhbXBsZS5yZWNlaXZlcgoKaW1wb3J0IGFuZHJvaWQuYXBwLmFkbWluLkRldmljZUFkbWluUmVjZWl2ZXIKaW1wb3J0IGFuZHJvaWQuY29udGVudC5Db250ZXh0CmltcG9ydCBhbmRyb2lkLmNvbnRlbnQuSW50ZW50CmltcG9ydCBhbmRyb2lkLnV0aWwuTG9nCmltcG9ydCBhbmRyb2lkeC5jb3JlLmNvbnRlbnQuQ29udGV4dENvbXBhdAppbXBvcnQgY29tLmV4YW1wbGUuZGF0YS5TZWN1cml0eVByZWZzCmltcG9ydCBjb20uZXhhbXBsZS5zZXJ2aWNlLkNhbWVyYUZvcmVncm91bmRTZXJ2aWNlCmltcG9ydCBjb20uZXhhbXBsZS53b3JrZXIuU2VjdXJpdHlFdmVudERpc3RyaWJ1dG9yCgpjbGFzcyBNeURldmljZUFkbWluUmVjZWl2ZXIgOiBEZXZpY2VBZG1pblJlY2VpdmVyKCkgewoKICAgIG92ZXJyaWRlIGZ1biBvblBhc3N3b3JkRmFpbGVkKGNvbnRleHQ6IENvbnRleHQsIGludGVudDogSW50ZW50KSB7CiAgICAgICAgc3VwZXIub25QYXNzd29yZEZhaWxlZChjb250ZXh0LCBpbnRlbnQpCgogICAgICAgIHZhbCBwcmVmcyA9IFNlY3VyaXR5UHJlZnMuZ2V0SW5zdGFuY2UoY29udGV4dCkKICAgICAgICBpZiAoIXByZWZzLmlzVHJhY2tpbmdFbmFibGVkKSB7CiAgICAgICAgICAgIExvZy5kKCJEZXZpY2VBZG1pblJlY2VpdmVyIiwgIlBhc3N3b3JkIGF0dGVtcHQgaWdub3JlZCBiZWNhdXNlIHByb3RlY3Rpb24gaXMgZGlzYWJsZWQiKQogICAgICAgICAgICByZXR1cm4KICAgICAgICB9CgogICAgICAgIHZhbCBmYWlsZWRBdHRlbXB0cyA9IHByZWZzLnJlZ2lzdGVyRmFpbGVkVW5sb2NrQXR0ZW1wdCgpCiAgICAgICAgaWYgKGZhaWxlZEF0dGVtcHRzIDwgcHJlZnMuZmFpbGVkVGhyZXNob2xkKSB7CiAgICAgICAgICAgIExvZy5kKCJEZXZpY2VBZG1pblJlY2VpdmVyIiwgIkZhaWxlZCB1bmxvY2sgcmVjb3JkZWQgKCRmYWlsZWRBdHRlbXB0cy8ke3ByZWZzLmZhaWxlZFRocmVzaG9sZH0pIikKICAgICAgICAgICAgcmV0dXJuCiAgICAgICAgfQoKICAgICAgICAvLyBFdmVyeSBjYWxsYmFjayBiZWNvbWVzIGFuIGluZGVwZW5kZW50IGV2ZW50LiBUaGUgYWN0aXZlIGZvcmVncm91bmQKICAgICAgICAvLyBzZXJ2aWNlIHNlcmlhbGl6ZXMgY29uY3VycmVudCBjYXB0dXJlcyBhbmQgdGhlIGR1cmFibGUgcXVldWUgaGFuZGxlcwogICAgICAgIC8vIGV2ZW50cyB0aGF0IGNhbm5vdCBiZSBwcm9jZXNzZWQgaW1tZWRpYXRlbHkuCiAgICAgICAgdmFsIGV2ZW50ID0gcHJlZnMuZW5xdWV1ZVNlY3VyaXR5RXZlbnQoKQogICAgICAgIHZhbCBjYXB0dXJlSW50ZW50ID0gSW50ZW50KGNvbnRleHQsIENhbWVyYUZvcmVncm91bmRTZXJ2aWNlOjpjbGFzcy5qYXZhKS5hcHBseSB7CiAgICAgICAgICAgIGFjdGlvbiA9IENhbWVyYUZvcmVncm91bmRTZXJ2aWNlLkFDVElPTl9DQVBUVVJFX0FORF9TRU5ECiAgICAgICAgICAgIHB1dEV4dHJhKENhbWVyYUZvcmVncm91bmRTZXJ2aWNlLkVYVFJBX1NFQ1VSSVRZX0VWRU5UX0lELCBldmVudC5pZCkKICAgICAgICB9CiAgICAgICAgdHJ5IHsKICAgICAgICAgICAgLy8gQSBwbGFpbiBzdGFydFNlcnZpY2UoKSBjYW4gdGhyb3cgSWxsZWdhbFN0YXRlRXhjZXB0aW9uIGhlcmUgb24KICAgICAgICAgICAgLy8gQVBJIDI2KzogdGhlIGFwcCBpcyB2aXJ0dWFsbHkgbmV2ZXIgaW4gdGhlIGZvcmVncm91bmQgYXQgdGhlCiAgICAgICAgICAgIC8vIG1vbWVudCBzb21lb25lIGVsc2UgaXMgZmFpbGluZyB0byB1bmxvY2sgdGhlIGRldmljZS4gUm91dGUKICAgICAgICAgICAgLy8gdGhyb3VnaCB0aGUgY29tcGF0IGhlbHBlciBzbyB0aGlzLCB0aGUgcHJpbWFyeSB0cmlnZ2VyIGZvciB0aGUKICAgICAgICAgICAgLy8gd2hvbGUgYXBwLCB1c2VzIHRoZSBzYW1lIGJhY2tncm91bmQtc3RhcnQtc2FmZSBwYXRoIGFzIGV2ZXJ5CiAgICAgICAgICAgIC8vIG90aGVyIGRpc3BhdGNoIHNpdGUgKFNlY3VyaXR5RXZlbnREaXN0cmlidXRvciwgU2VjdXJpdHlFdmVudFdvcmtlcikuCiAgICAgICAgICAgIENvbnRleHRDb21wYXQuc3RhcnRGb3JlZ3JvdW5kU2VydmljZShjb250ZXh0LCBjYXB0dXJlSW50ZW50KQogICAgICAgICAgICBMb2cuZCgiRGV2aWNlQWRtaW5SZWNlaXZlciIsICJGYWlsZWQtdW5sb2NrIGNhcHR1cmUgZGlzcGF0Y2hlZCBmb3IgZXZlbnQgJHtldmVudC5pZH0iKQogICAgICAgIH0gY2F0Y2ggKGU6IEV4Y2VwdGlvbikgewogICAgICAgICAgICBMb2cuZSgiRGV2aWNlQWRtaW5SZWNlaXZlciIsICJEaXJlY3QgY2FwdHVyZSBkaXNwYXRjaCBmYWlsZWQ7IHF1ZXVlZCBmb3IgcmVjb3ZlcnkiLCBlKQogICAgICAgICAgICBTZWN1cml0eUV2ZW50RGlzdHJpYnV0b3IuZW5xdWV1ZShjb250ZXh0LCBldmVudC5pZCkKICAgICAgICB9CiAgICB9CgogICAgb3ZlcnJpZGUgZnVuIG9uUGFzc3dvcmRTdWNjZWVkZWQoY29udGV4dDogQ29udGV4dCwgaW50ZW50OiBJbnRlbnQpIHsKICAgICAgICBzdXBlci5vblBhc3N3b3JkU3VjY2VlZGVkKGNvbnRleHQsIGludGVudCkKICAgICAgICB2YWwgcHJlZnMgPSBTZWN1cml0eVByZWZzLmdldEluc3RhbmNlKGNvbnRleHQpCiAgICAgICAgLy8gUmVzZXQgdGhlIG5leHQgdW5sb2NrIHNlc3Npb24gd2l0aG91dCBjYW5jZWxsaW5nIGFuIGV2ZW50IGFscmVhZHkKICAgICAgICAvLyBjcmVhdGVkIGZvciB0aGUgcHJlY2VkaW5nIGZhaWxlZCBhdHRlbXB0OyBjYXB0dXJlL2VtYWlsIG1heSBzdGlsbAogICAgICAgIC8vIGJlIHByb2Nlc3NpbmcgYXN5bmNocm9ub3VzbHkuCiAgICAgICAgcHJlZnMucmVzZXRGYWlsZWRVbmxvY2tBdHRlbXB0cyhjYW5jZWxQZW5kaW5nRXZlbnRzID0gZmFsc2UpCiAgICAgICAgTG9nLmQoIkRldmljZUFkbWluUmVjZWl2ZXIiLCAiUGFzc3dvcmQgc3VjY2VlZGVkOyBjb25zZWN1dGl2ZSBmYWlsZWQgYXR0ZW1wdHMgcmVzZXQiKQogICAgfQoKICAgIG92ZXJyaWRlIGZ1biBvbkVuYWJsZWQoY29udGV4dDogQ29udGV4dCwgaW50ZW50OiBJbnRlbnQpIHsKICAgICAgICBzdXBlci5vbkVuYWJsZWQoY29udGV4dCwgaW50ZW50KQogICAgICAgIExvZy5kKCJEZXZpY2VBZG1pblJlY2VpdmVyIiwgIkRldmljZSBBZG1pbiBFbmFibGVkIikKICAgIH0KCiAgICBvdmVycmlkZSBmdW4gb25EaXNhYmxlZChjb250ZXh0OiBDb250ZXh0LCBpbnRlbnQ6IEludGVudCkgewogICAgICAgIHN1cGVyLm9uRGlzYWJsZWQoY29udGV4dCwgaW50ZW50KQogICAgICAgIExvZy5kKCJEZXZpY2VBZG1pblJlY2VpdmVyIiwgIkRldmljZSBBZG1pbiBEaXNhYmxlZCIpCiAgICAgICAgLy8gSWYgZGlzYWJsZWQsIHR1cm4gb2ZmIHRyYWNraW5nIHRvIGF2b2lkIGluY29uc2lzdGVudCBVSQogICAgICAgIHZhbCBwcmVmcyA9IFNlY3VyaXR5UHJlZnMuZ2V0SW5zdGFuY2UoY29udGV4dCkKICAgICAgICBwcmVmcy5pc1RyYWNraW5nRW5hYmxlZCA9IGZhbHNlCiAgICAgICAgcHJlZnMucmVzZXRGYWlsZWRVbmxvY2tBdHRlbXB0cygpCiAgICAgICAgY29tLmV4YW1wbGUucmVjZWl2ZXIuQ291bnRkb3duU2NoZWR1bGVyLmNhbmNlbChjb250ZXh0KQogICAgfQp9Cg==
+package com.example.receiver
+
+import android.app.admin.DeviceAdminReceiver
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+import androidx.core.content.ContextCompat
+import com.example.data.SecurityPrefs
+import com.example.service.CameraForegroundService
+import com.example.worker.SecurityEventDistributor
+
+class MyDeviceAdminReceiver : DeviceAdminReceiver() {
+
+    override fun onPasswordFailed(context: Context, intent: Intent) {
+        super.onPasswordFailed(context, intent)
+
+        val prefs = SecurityPrefs.getInstance(context)
+        if (!prefs.isTrackingEnabled) {
+            Log.d("DeviceAdminReceiver", "Password attempt ignored because protection is disabled")
+            return
+        }
+
+        val failedAttempts = prefs.registerFailedUnlockAttempt()
+        if (failedAttempts < prefs.failedThreshold) {
+            Log.d("DeviceAdminReceiver", "Failed unlock recorded ($failedAttempts/${prefs.failedThreshold})")
+            return
+        }
+
+        // Every callback becomes an independent event. The active foreground
+        // service serializes concurrent captures and the durable queue handles
+        // events that cannot be processed immediately.
+        val event = prefs.enqueueSecurityEvent()
+        val captureIntent = Intent(context, CameraForegroundService::class.java).apply {
+            action = CameraForegroundService.ACTION_CAPTURE_AND_SEND
+            putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, event.id)
+        }
+        try {
+            // A plain startService() can throw IllegalStateException here on
+            // API 26+: the app is virtually never in the foreground at the
+            // moment someone else is failing to unlock the device. Route
+            // through the compat helper so this, the primary trigger for the
+            // whole app, uses the same background-start-safe path as every
+            // other dispatch site (SecurityEventDistributor, SecurityEventWorker).
+            ContextCompat.startForegroundService(context, captureIntent)
+            Log.d("DeviceAdminReceiver", "Failed-unlock capture dispatched for event ${event.id}")
+        } catch (e: Exception) {
+            Log.e("DeviceAdminReceiver", "Direct capture dispatch failed; queued for recovery", e)
+            SecurityEventDistributor.enqueue(context, event.id)
+        }
+    }
+
+    override fun onPasswordSucceeded(context: Context, intent: Intent) {
+        super.onPasswordSucceeded(context, intent)
+        val prefs = SecurityPrefs.getInstance(context)
+        // Reset the next unlock session without cancelling an event already
+        // created for the preceding failed attempt; capture/email may still
+        // be processing asynchronously.
+        prefs.resetFailedUnlockAttempts(cancelPendingEvents = false)
+        Log.d("DeviceAdminReceiver", "Password succeeded; consecutive failed attempts reset")
+    }
+
+    override fun onEnabled(context: Context, intent: Intent) {
+        super.onEnabled(context, intent)
+        Log.d("DeviceAdminReceiver", "Device Admin Enabled")
+    }
+
+    override fun onDisabled(context: Context, intent: Intent) {
+        super.onDisabled(context, intent)
+        Log.d("DeviceAdminReceiver", "Device Admin Disabled")
+        // If disabled, turn off tracking to avoid inconsistent UI
+        val prefs = SecurityPrefs.getInstance(context)
+        prefs.isTrackingEnabled = false
+        prefs.resetFailedUnlockAttempts()
+        com.example.receiver.CountdownScheduler.cancel(context)
+    }
+}
