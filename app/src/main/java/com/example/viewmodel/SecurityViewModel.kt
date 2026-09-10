@@ -254,9 +254,10 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
             _uiState.update { it.copy(bannerMessage = context.getString(com.example.R.string.ui_353209d98cda)) }
             return
         }
-        // FIX(countdown): on Android 12+ an inexact alarm drifts long timers.
-        // Send the user once to Settings to grant Exact Alarms, then still
-        // start (inexact) so protection is never silently off.
+        CountdownScheduler.start(context, durationMillis)
+        // Start the pre-armed foreground service while this activity is still
+        // visible. Only then offer Exact Alarm settings; launching Settings
+        // first can make Android classify the FGS start as background.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager
             if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
@@ -271,7 +272,6 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
                 }
             }
         }
-        CountdownScheduler.start(context, durationMillis)
         _uiState.update {
             it.copy(
                 countdownEnabled = true,
