@@ -300,16 +300,17 @@ class SecurityPrefs private constructor(private val context: Context) {
 
     @Synchronized
     fun claimNextSecurityEvent(): SecurityEvent? {
+        val now = System.currentTimeMillis()
         val next = getSecurityEventsFromRoom().firstOrNull { it.status == SecurityEventStatus.PENDING } ?: return null
         updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == next.id) it.copy(
                     status = SecurityEventStatus.IN_PROGRESS,
-                    updatedAt = System.currentTimeMillis()
+                    updatedAt = now
                 ) else it
             }
         }
-        return next.copy(status = SecurityEventStatus.IN_PROGRESS, updatedAt = System.currentTimeMillis())
+        return next.copy(status = SecurityEventStatus.IN_PROGRESS, updatedAt = now)
     }
 
     @Synchronized
@@ -413,11 +414,21 @@ class SecurityPrefs private constructor(private val context: Context) {
     fun failPendingSecurityEvent(id: String) {
         updateSecurityEventsInRoom { events ->
             events.map {
-                if (it.id == id && SecurityEventStateMachine.canTransition(
-                        it.status,
-                        SecurityEventStatus.FAILED
-                    )) {
-                    it.copy(status = SecurityEventStatus.FAILED, updatedAt = System.currentTimeMillis())
+                if (it.id == id) {
+                    // FIX: SEND_PENDING / FAILED_RETRYABLE cannot go to FAILED
+                    // per state machine, so fall back to FAILED_FINAL.
+                    val target = if (SecurityEventStateMachine.canTransition(
+                            it.status,
+                            SecurityEventStatus.FAILED
+                        )
+                    ) SecurityEventStatus.FAILED
+                    else if (SecurityEventStateMachine.canTransition(
+                            it.status,
+                            SecurityEventStatus.FAILED_FINAL
+                        )
+                    ) SecurityEventStatus.FAILED_FINAL
+                    else return@map it
+                    it.copy(status = target, updatedAt = System.currentTimeMillis())
                 } else it
             }
         }
@@ -513,9 +524,12 @@ class SecurityPrefs private constructor(private val context: Context) {
         val active = events.filterNot { it.status.isTerminal() }
         val terminal = events.filter { it.status.isTerminal() }
         // Never evict retryable or in-flight work; bound only terminal history.
-        store.replaceEvents(
-            active + terminal.takeLast((MAX_SECURITY_EVENTS - active.size).coerceAtLeast(0))
-        )
+        // FIX: preserve chronological order (timestamp ASC) instead of
+        // active+terminal grouping which broke claimNext ordering.
+        val boundedTerminal = terminal.sortedBy { it.timestamp }
+            .takeLast((MAX_SECURITY_EVENTS - active.size).coerceAtLeast(0))
+        val merged = (active + boundedTerminal).sortedBy { it.timestamp }
+        store.replaceEvents(merged)
     }
 
     private fun migrateLegacyStorageIfNeeded() {

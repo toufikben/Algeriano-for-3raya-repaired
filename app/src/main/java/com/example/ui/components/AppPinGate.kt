@@ -142,6 +142,11 @@ fun AppPinGate(
                                     confirmation = ""
                                 }
                             }
+                        } else if (!pin.matches(Regex("\\d{6,8}"))) {
+                            // FIX: short/invalid format must not count toward
+                            // lockout — previously 4-digit typos locked the user.
+                            pin = ""
+                            error = context.getString(com.example.R.string.ui_8dd08f154388)
                         } else if (prefs.verifyAppPin(pin)) {
                             unlocked = true
                             pin = ""

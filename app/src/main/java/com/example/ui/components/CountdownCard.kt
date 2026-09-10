@@ -80,7 +80,12 @@ fun CountdownCard(
     var selectedDuration by remember(selectedDurationMillis) {
         mutableStateOf(
             countdownOptions.firstOrNull { it.durationMillis == selectedDurationMillis }
-                ?: countdownOptions.first()
+                // FIX: custom durations (e.g. 5h) previously snapped back to
+                // 1-min preset. Keep a synthetic custom option instead.
+                ?: if (selectedDurationMillis > 0L) CountdownOption(
+                    com.example.R.string.ui_b5b126bd23e6,
+                    selectedDurationMillis
+                ) else countdownOptions.first()
         )
     }
 

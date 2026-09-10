@@ -378,7 +378,13 @@ private fun IntruderLogItem(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                val isFinalFailure = log.statusMessage.contains("FAILED_FINAL")
+                val isFinalFailure = !log.emailSent && (
+                    log.statusMessage.contains("FAILED_FINAL") ||
+                        log.statusMessage.contains("final", ignoreCase = true) ||
+                        log.statusMessage.contains("فشل", ignoreCase = true) ||
+                        log.statusMessage.contains("échec", ignoreCase = true) ||
+                        log.statusMessage.contains("fail", ignoreCase = true)
+                    )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier

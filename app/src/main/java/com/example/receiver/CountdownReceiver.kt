@@ -32,6 +32,12 @@ class CountdownReceiver : BroadcastReceiver() {
             CountdownScheduler.ACTION_RESET -> {
                 if (prefs.countdownEnabled && prefs.countdownEndTime > System.currentTimeMillis()) {
                     prefs.recordCountdownDiagnostic("reset", "accepted", "remaining_countdown_reset")
+                    // FIX: complete orphan countdown event before restarting so
+                    // the old PENDING event does not leak as a generic capture.
+                    val orphanId = prefs.countdownEventId
+                    if (!orphanId.isBlank()) {
+                        prefs.completeSecurityEvent(orphanId, com.example.data.SecurityEventStatus.CANCELLED)
+                    }
                     CountdownScheduler.start(context, prefs.countdownDurationMillis)
                 } else {
                     prefs.recordCountdownDiagnostic("reset", "ignored", "countdown_not_active_or_expired")
@@ -49,20 +55,15 @@ class CountdownReceiver : BroadcastReceiver() {
                             action = CameraForegroundService.ACTION_COUNTDOWN_EXPIRED
                             putExtra(CameraForegroundService.EXTRA_SECURITY_EVENT_ID, prefs.countdownEventId)
                         }
-                        // The monitoring service is normally already in the
-                        // foreground. Reuse it first; only request a new FGS
-                        // start when Android reports that it is not running.
+                        // FIX: service is event-driven (not persistent), so go
+                        // straight to startForegroundService. The old
+                        // startService-first path always threw on API 26+.
                         try {
-                            context.startService(serviceIntent)
-                            prefs.recordCountdownDiagnostic("service_start", "requested", "startService")
-                        } catch (_: Exception) {
-                            try {
-                                ContextCompat.startForegroundService(context, serviceIntent)
-                                prefs.recordCountdownDiagnostic("service_start", "requested", "startForegroundService_fallback")
-                            } catch (e: Exception) {
-                                prefs.recordCountdownDiagnostic("service_start", "failed", "${e.javaClass.simpleName}:${e.message}")
-                                throw e
-                            }
+                            ContextCompat.startForegroundService(context, serviceIntent)
+                            prefs.recordCountdownDiagnostic("service_start", "requested", "startForegroundService")
+                        } catch (e: Exception) {
+                            prefs.recordCountdownDiagnostic("service_start", "failed", "${e.javaClass.simpleName}:${e.message}")
+                            throw e
                         }
                     } catch (e: Exception) {
                         prefs.recordCountdownDiagnostic("retry", "scheduled", "receiver_service_start:${e.javaClass.simpleName}")
@@ -174,9 +175,16 @@ object CountdownScheduler {
             return
         }
         val now = System.currentTimeMillis()
-        val warningAt = (endTime - WARNING_LEAD_MILLIS).coerceAtLeast(now + 1_000L)
-        runCatching {
-            scheduleAlarm(alarmManager, warningAt, pendingIntent(context, ACTION_WARNING, WARNING_REQUEST_CODE), prefs, "warning")
+        val duration = endTime - now
+        // FIX: skip warning when duration is shorter than lead time + slack,
+        // otherwise 1-min test timer fires warning after 1s (confusing).
+        if (duration > WARNING_LEAD_MILLIS + 60_000L) {
+            val warningAt = (endTime - WARNING_LEAD_MILLIS).coerceAtLeast(now + 1_000L)
+            runCatching {
+                scheduleAlarm(alarmManager, warningAt, pendingIntent(context, ACTION_WARNING, WARNING_REQUEST_CODE), prefs, "warning")
+            }
+        } else {
+            prefs.recordCountdownDiagnostic("schedule", "skipped", "warning_too_close_for_short_duration")
         }
         runCatching {
             scheduleAlarm(alarmManager, endTime.coerceAtLeast(now + 1_000L), pendingIntent(context, ACTION_EXPIRED, EXPIRED_REQUEST_CODE), prefs, "expired")

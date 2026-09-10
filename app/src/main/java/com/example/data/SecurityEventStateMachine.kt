@@ -16,6 +16,7 @@ object SecurityEventStateMachine {
             )
             SecurityEventStatus.IN_PROGRESS -> to in setOf(
                 SecurityEventStatus.PENDING,
+                SecurityEventStatus.CAPTURED,
                 SecurityEventStatus.SEND_PENDING,
                 SecurityEventStatus.FAILED_RETRYABLE,
                 SecurityEventStatus.FAILED_FINAL,

@@ -158,6 +158,18 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
         }
         prefs.email = email
         prefs.password = password
+        // FIX: verify both email and password round-trip. Previously only
+        // password was checked, so a KeyStore encrypt failure on email was
+        // silent and the UI reported success.
+        if (email.isNotEmpty() && prefs.email != email) {
+            _uiState.update {
+                it.copy(
+                    bannerMessage = context.getString(com.example.R.string.ui_credentials_save_failed),
+                    hasPassword = prefs.password.isNotEmpty()
+                )
+            }
+            return false
+        }
         if (password.isNotEmpty() && prefs.password != password) {
             _uiState.update {
                 it.copy(
@@ -280,8 +292,12 @@ class SecurityViewModel(application: Application) : AndroidViewModel(application
     fun clearLogs() {
         viewModelScope.launch(Dispatchers.IO) {
             prefs.clearLogs()
+            // FIX: clearLogs() deleted files but left SecurityEvent.photoPath
+            // pointing at missing files. Drop photo references from terminal
+            // events so future sendOnly reuse does not hit File.exists()==false.
+            // (Events themselves are kept for audit history.)
             context.getExternalFilesDir(null)?.resolve("intruder_photos")?.listFiles()
-                ?.forEach { it.delete() }
+                ?.forEach { runCatching { it.delete() } }
         }
     }
 

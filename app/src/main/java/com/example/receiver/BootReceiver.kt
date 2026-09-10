@@ -39,7 +39,10 @@ class BootReceiver : BroadcastReceiver() {
                 SecurityEventDistributor.enqueuePending(context)
                 Log.d("BootReceiver", "Pending events will resume from a visible app session")
             } else {
-                SecurityEventDistributor.enqueuePending(context)
+                // FIX: do not enqueue work while protection is disabled.
+                // Pending events were cancelled on disable; resuming them here
+                // would capture while the user explicitly turned protection off.
+                Log.d("BootReceiver", "Protection disabled; skipping pending-event resume")
             }
         }
     }

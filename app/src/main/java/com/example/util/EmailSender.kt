@@ -37,7 +37,9 @@ object EmailSender {
         eventId: String? = null
     ): SendResult {
         if (senderEmail.isBlank() || appPassword.isBlank()) {
-            return SendResult(false, context.getString(R.string.ui_16b9f058a24f))
+            // FIX: blank credentials can never succeed — mark non-retryable
+            // so callers go straight to FAILED_FINAL instead of 3 retries.
+            return SendResult(false, context.getString(R.string.ui_16b9f058a24f), retryable = false)
         }
 
         return try {
@@ -75,7 +77,9 @@ object EmailSender {
                 setSubject(subject, "UTF-8")
                 eventId?.let {
                     setHeader("X-Security-Event-Id", it)
-                    setHeader("Message-ID", "<$it@phone-fortress-security.local>")
+                    // FIX: unique Message-ID per send attempt. Reusing
+                    // <eventId@...> caused Gmail to dedupe retries.
+                    setHeader("Message-ID", "<$it-${System.currentTimeMillis()}-${java.util.UUID.randomUUID()}@phone-fortress-security.local>")
                 }
 
                 val multipart: Multipart = MimeMultipart()

@@ -120,6 +120,14 @@ class CameraForegroundService : Service() {
                 if (action == ACTION_COUNTDOWN_EXPIRED) {
                     prefs.countdownCapturePending = true
                     CaptureRetryWorker.enqueue(applicationContext, replaceExisting = true)
+                } else if (action == ACTION_CAPTURE_AND_SEND) {
+                    // FIX: device-admin events must not be dropped when FGS
+                    // promotion fails (background start denied, permission).
+                    // Leave event PENDING and hand it to the durable queue.
+                    val pendingId = intent?.getStringExtra(EXTRA_SECURITY_EVENT_ID)
+                    if (!pendingId.isNullOrBlank()) {
+                        com.example.worker.SecurityEventDistributor.enqueue(applicationContext, pendingId)
+                    }
                 }
                 stopSelf(startId)
                 return START_NOT_STICKY
@@ -149,9 +157,10 @@ class CameraForegroundService : Service() {
             this,
             Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
+        // FIX: allow location/email-only capture when CAMERA is missing.
+        // Previously we returned false here and dropped the whole event.
         if (!hasCameraPermission) {
-            Log.e(TAG, "Cannot start camera foreground service without CAMERA permission")
-            return false
+            Log.w(TAG, "Starting foreground service without CAMERA permission (photo will be skipped)")
         }
 
         val hasLocationPermission = ActivityCompat.checkSelfPermission(
@@ -163,7 +172,7 @@ class CameraForegroundService : Service() {
         ) == PackageManager.PERMISSION_GRANTED
 
         val foregroundServiceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
+            (if (hasCameraPermission) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0) or
                 if (hasLocationPermission) {
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
                 } else {
@@ -242,15 +251,12 @@ class CameraForegroundService : Service() {
         }
         if (!captureInProgress.compareAndSet(false, true)) {
             Log.w(TAG, "Capture already in progress; ignoring duplicate request")
-            if (!isTest && eventId != null) prefs.completeSecurityEvent(eventId, SecurityEventStatus.PENDING)
+            // FIX: do not downgrade SEND_PENDING/FAILED_RETRYABLE to PENDING
+            // and do not spawn unbounded waiter coroutines. The event already
+            // claimed stays IN_PROGRESS and will be processed; duplicates are
+            // dropped. Countdown retry is still scheduled once.
             if (isCountdownCapture) {
                 CountdownScheduler.schedulePendingRetry(applicationContext)
-            }
-            if (!isTest && eventId != null) {
-                serviceScope.launch {
-                    while (captureInProgress.get()) kotlinx.coroutines.delay(250L)
-                    processIntruderCapture(isTest = false, isCountdownCapture = isCountdownCapture, eventId = eventId)
-                }
             }
             return
         }
@@ -473,7 +479,14 @@ class CameraForegroundService : Service() {
                     }
                 }
                 if (isCountdownCapture) {
-                    CountdownScheduler.schedulePendingRetry(applicationContext)
+                    if (autoRestartCountdown && !isTest && eventId != null) {
+                        // FIX: after auto-restart pending=false so countdown
+                        // worker would ignore the old event. Requeue old event
+                        // via durable distributor instead of losing retry.
+                        com.example.worker.SecurityEventDistributor.enqueue(applicationContext, eventId)
+                    } else {
+                        CountdownScheduler.schedulePendingRetry(applicationContext)
+                    }
                 }
             } finally {
                 captureInProgress.set(false)
