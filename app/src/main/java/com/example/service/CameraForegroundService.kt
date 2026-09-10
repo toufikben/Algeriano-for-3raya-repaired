@@ -586,6 +586,7 @@ class CameraForegroundService : Service() {
 
         var outputFile: File? = null
         val captureCompleted = kotlinx.coroutines.CompletableDeferred<File?>()
+        val finalCaptureRequested = AtomicBoolean(false)
 
         val outputSize = try {
             val characteristics = cameraManager.getCameraCharacteristics(frontCameraId)
@@ -607,6 +608,12 @@ class CameraForegroundService : Service() {
             try {
                 image = ir.acquireLatestImage()
                 if (image != null) {
+                    // Repeating requests warm up AE/AWB/AF only. Do not save
+                    // one of those preview frames as the security photo.
+                    if (!finalCaptureRequested.get()) {
+                        Log.d(TAG, "Discarding preview JPEG before final capture")
+                        return@setOnImageAvailableListener
+                    }
                     val buffer = image.planes[0].buffer
                     val bytes = ByteArray(buffer.remaining())
                     buffer.get(bytes)
@@ -647,7 +654,7 @@ class CameraForegroundService : Service() {
                 }
             } finally {
                 image?.close()
-                closeCamera()
+                if (finalCaptureRequested.get()) closeCamera()
             }
         }, backgroundHandler)
 
@@ -676,6 +683,7 @@ class CameraForegroundService : Service() {
                                         session.setRepeatingRequest(captureBuilder.build(), null, backgroundHandler)
                                         backgroundHandler?.postDelayed({
                                             if (!captureCompleted.isCompleted) {
+                                                finalCaptureRequested.set(true)
                                                 runCatching {
                                                     session.capture(captureBuilder.build(), null, backgroundHandler)
                                                 }.onFailure { error ->
