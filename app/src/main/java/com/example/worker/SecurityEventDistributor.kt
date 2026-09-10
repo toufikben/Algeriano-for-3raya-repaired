@@ -2,7 +2,10 @@ package com.example.worker
 
 import android.content.Context
 import android.content.Intent
+import android.app.PendingIntent
 import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.BackoffPolicy
@@ -12,6 +15,9 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.example.data.SecurityPrefs
+import com.example.MainActivity
+import com.example.R
+import com.example.SecurityApp
 import com.example.service.CameraForegroundService
 import java.util.concurrent.TimeUnit
 
@@ -106,6 +112,31 @@ object SecurityEventDistributor {
     internal fun workName(eventId: String): String = WORK_PREFIX + eventId
 
     internal const val MAX_ATTEMPTS = MAX_WORK_ATTEMPTS
+
+    fun notifyDeferredCapture(context: Context, eventId: String) {
+        val openIntent = PendingIntent.getActivity(
+            context,
+            eventId.hashCode(),
+            Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, SecurityApp.CHANNEL_ID_ALERTS)
+            .setSmallIcon(R.drawable.ic_launcher_foreground_img_1787338860864)
+            .setContentTitle(context.getString(R.string.notification_deferred_title))
+            .setContentText(context.getString(R.string.notification_deferred_text))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.notification_deferred_text)))
+            .setContentIntent(openIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        runCatching {
+            NotificationManagerCompat.from(context).notify(DEFERRED_NOTIFICATION_BASE + eventId.hashCode(), notification)
+        }
+    }
+
+    private const val DEFERRED_NOTIFICATION_BASE = 31_000
 }
 
 class SecurityEventWorker(
@@ -124,9 +155,7 @@ class SecurityEventWorker(
         // into a failed security event or an endless retry loop.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             prefs.deferSecurityEvent(event.id)
-            // The event stays durable and is retried from a visible context;
-            // WorkManager itself cannot prove that a camera FGS may start.
-            SecurityEventDistributor.scheduleRecovery(applicationContext)
+            SecurityEventDistributor.notifyDeferredCapture(applicationContext, event.id)
             return Result.success()
         }
 
@@ -155,8 +184,10 @@ class SecurityEventRecoveryWorker(
     override suspend fun doWork(): Result {
         val prefs = SecurityPrefs.getInstance(applicationContext)
         prefs.recoverStaleSecurityEvents()
-        SecurityEventDistributor.enqueuePending(applicationContext)
-        if (prefs.hasPendingSecurityEvents()) {
+        prefs.getPendingSecurityEvents()
+            .filter { it.status != com.example.data.SecurityEventStatus.DEFERRED }
+            .forEach { SecurityEventDistributor.enqueue(applicationContext, it.id) }
+        if (prefs.getPendingSecurityEvents().any { it.status != com.example.data.SecurityEventStatus.DEFERRED }) {
             SecurityEventDistributor.scheduleRecovery(applicationContext)
         }
         return Result.success()

@@ -4,6 +4,8 @@
     <string name="notification_countdown_desc">Protection timer alerts and expiration warnings</string>
     <string name="notification_alert_text">An unlock attempt was processed; review the result and details in the app</string>
     <string name="notification_alert_title">Security alert: Intrusion attempt detected!</string>
+    <string name="notification_deferred_title">Security capture pending</string>
+    <string name="notification_deferred_text">Android restricted camera use in the background. Open the app to process the pending event.</string>
     <string name="notification_text">Protection is enabled; a notification appears while the service runs</string>
     <string name="notification_title">Phone protection is active</string>
     <string name="notification_channel_desc">Notification shown while protection is active and for attempt results</string>

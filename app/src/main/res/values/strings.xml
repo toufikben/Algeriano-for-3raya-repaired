@@ -4,6 +4,8 @@
     <string name="notification_countdown_desc">تنبيهات مؤقت الحماية واقتراب انتهائه</string>
     <string name="notification_alert_text">تمت معالجة محاولة فتح؛ راجع النتيجة والتفاصيل داخل التطبيق</string>
     <string name="notification_alert_title">تنبيه أمان: تم رصد محاولة اختراق!</string>
+    <string name="notification_deferred_title">التقاط أمني معلق</string>
+    <string name="notification_deferred_text">قيود Android منعت تشغيل الكاميرا في الخلفية. افتح التطبيق لمعالجة الحدث المعلق.</string>
     <string name="notification_text">الحماية مفعّلة؛ سيظهر إشعار أثناء تشغيل الخدمة</string>
     <string name="notification_title">حماية الهاتف نشطة</string>
     <string name="notification_channel_desc">إشعار ظاهر عند تفعيل الحماية وتنبيهات نتائج المحاولات</string>

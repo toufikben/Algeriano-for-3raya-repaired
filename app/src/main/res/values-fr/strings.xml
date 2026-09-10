@@ -4,6 +4,8 @@
     <string name="notification_countdown_desc">Alertes du minuteur de protection et avertissements d’expiration</string>
     <string name="notification_alert_text">Une tentative de déverrouillage a été traitée ; consultez le résultat et les détails dans l’application</string>
     <string name="notification_alert_title">Alerte de sécurité : tentative d’intrusion détectée !</string>
+    <string name="notification_deferred_title">Capture de sécurité en attente</string>
+    <string name="notification_deferred_text">Android a limité l’utilisation de la caméra en arrière-plan. Ouvrez l’application pour traiter l’événement en attente.</string>
     <string name="notification_text">La protection est activée ; une notification apparaît pendant le fonctionnement du service</string>
     <string name="notification_title">La protection du téléphone est active</string>
     <string name="notification_channel_desc">Notification affichée lorsque la protection est active et pour les résultats des tentatives</string>
