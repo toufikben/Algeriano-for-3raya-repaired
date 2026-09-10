@@ -67,6 +67,23 @@ class SecurityEventRetryTest {
     }
 
     @Test
+    fun `retrying send marks email pending without resetting capture states`() {
+        val event = prefs.enqueueSecurityEvent()
+        assertTrue(prefs.claimSecurityEvent(event.id))
+        prefs.recordCaptureResult(event.id, "/tmp/photo.jpg", 36.7, 3.0, 1234L)
+        prefs.moveCapturedEventToSendPending(event.id)
+        prefs.updateEmailState(event.id, SecurityEventComponentState.FAILED)
+
+        assertTrue(prefs.recordSendRetry(event.id))
+        assertTrue(prefs.markSendPendingForRetry(event.id))
+
+        val saved = prefs.getSecurityEvent(event.id)
+        assertEquals(SecurityEventComponentState.SUCCEEDED, saved?.photoState)
+        assertEquals(SecurityEventComponentState.SUCCEEDED, saved?.locationState)
+        assertEquals(SecurityEventComponentState.PENDING, saved?.emailState)
+    }
+
+    @Test
     fun `retry updates one intruder log for the same event`() {
         val first = IntruderLog(
             id = "first-log",

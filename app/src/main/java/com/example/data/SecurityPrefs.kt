@@ -358,7 +358,12 @@ class SecurityPrefs private constructor(private val context: Context) {
             events.map { event ->
                 if (event.id == id && SecurityEventStateMachine.canTransition(event.status, SecurityEventStatus.DEFERRED)) {
                     changed = true
-                    event.copy(status = SecurityEventStatus.DEFERRED, updatedAt = System.currentTimeMillis())
+                    event.copy(
+                        status = SecurityEventStatus.DEFERRED,
+                        updatedAt = System.currentTimeMillis(),
+                        photoState = if (event.photoState == SecurityEventComponentState.SUCCEEDED) event.photoState else SecurityEventComponentState.DEFERRED,
+                        locationState = if (event.locationState == SecurityEventComponentState.SUCCEEDED) event.locationState else SecurityEventComponentState.DEFERRED
+                    )
                 } else event
             }
         }
@@ -367,6 +372,19 @@ class SecurityPrefs private constructor(private val context: Context) {
 
     @Synchronized
     fun getSecurityEvent(id: String): SecurityEvent? = getSecurityEventsFromRoom().firstOrNull { it.id == id }
+
+    @Synchronized
+    fun markCapturePending(id: String) {
+        updateSecurityEventsInRoom { events ->
+            events.map { event ->
+                if (event.id == id) event.copy(
+                    photoState = if (event.photoState == SecurityEventComponentState.SUCCEEDED) event.photoState else SecurityEventComponentState.PENDING,
+                    locationState = if (event.locationState == SecurityEventComponentState.SUCCEEDED) event.locationState else SecurityEventComponentState.PENDING,
+                    updatedAt = System.currentTimeMillis()
+                ) else event
+            }
+        }
+    }
 
     @Synchronized
     fun recordCaptureResult(
@@ -412,6 +430,21 @@ class SecurityPrefs private constructor(private val context: Context) {
     }
 
     @Synchronized
+    fun recordLocationResult(id: String, latitude: Double?, longitude: Double?, locationTimestamp: Long?) {
+        updateSecurityEventsInRoom { events ->
+            events.map { event ->
+                if (event.id == id && event.photoState == SecurityEventComponentState.SUCCEEDED) event.copy(
+                    latitude = latitude,
+                    longitude = longitude,
+                    locationTimestamp = locationTimestamp,
+                    locationState = if (latitude != null && longitude != null) SecurityEventComponentState.SUCCEEDED else SecurityEventComponentState.FAILED,
+                    updatedAt = System.currentTimeMillis()
+                ) else event
+            }
+        }
+    }
+
+    @Synchronized
     fun updateEmailState(id: String, state: SecurityEventComponentState) {
         updateSecurityEventsInRoom { events ->
             events.map { event -> if (event.id == id) event.copy(emailState = state, updatedAt = System.currentTimeMillis()) else event }
@@ -450,7 +483,11 @@ class SecurityPrefs private constructor(private val context: Context) {
                         SecurityEventStatus.SEND_PENDING
                     )) {
                     changed = true
-                    it.copy(status = SecurityEventStatus.SEND_PENDING, updatedAt = System.currentTimeMillis())
+                    it.copy(
+                        status = SecurityEventStatus.SEND_PENDING,
+                        emailState = SecurityEventComponentState.PENDING,
+                        updatedAt = System.currentTimeMillis()
+                    )
                 } else it
             }
         }
