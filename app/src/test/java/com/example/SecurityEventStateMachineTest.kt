@@ -10,7 +10,8 @@ class SecurityEventStateMachineTest {
     @Test
     fun `capture and send flow is allowed`() {
         assertTrue(SecurityEventStateMachine.canTransition(SecurityEventStatus.PENDING, SecurityEventStatus.IN_PROGRESS))
-        assertTrue(SecurityEventStateMachine.canTransition(SecurityEventStatus.IN_PROGRESS, SecurityEventStatus.SEND_PENDING))
+        assertTrue(SecurityEventStateMachine.canTransition(SecurityEventStatus.IN_PROGRESS, SecurityEventStatus.CAPTURED))
+        assertTrue(SecurityEventStateMachine.canTransition(SecurityEventStatus.CAPTURED, SecurityEventStatus.SEND_PENDING))
         assertTrue(SecurityEventStateMachine.canTransition(SecurityEventStatus.SEND_PENDING, SecurityEventStatus.SENT))
     }
 
@@ -32,5 +33,11 @@ class SecurityEventStateMachineTest {
             assertFalse(SecurityEventStateMachine.canTransition(terminal, SecurityEventStatus.PENDING))
             assertFalse(SecurityEventStateMachine.canTransition(terminal, SecurityEventStatus.SEND_PENDING))
         }
+    }
+
+    @Test
+    fun `background restriction defers event and recovery can resume it`() {
+        assertTrue(SecurityEventStateMachine.canTransition(SecurityEventStatus.PENDING, SecurityEventStatus.DEFERRED))
+        assertTrue(SecurityEventStateMachine.canTransition(SecurityEventStatus.DEFERRED, SecurityEventStatus.IN_PROGRESS))
     }
 }

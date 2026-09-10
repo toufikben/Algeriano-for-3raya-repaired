@@ -28,7 +28,10 @@ data class SecurityEventEntity(
     val photoPath: String?,
     val latitude: Double?,
     val longitude: Double?,
-    val locationTimestamp: Long?
+    val locationTimestamp: Long?,
+    val photoState: String,
+    val locationState: String,
+    val emailState: String
 )
 
 @Entity(
@@ -96,7 +99,7 @@ interface SecurityDao {
 
 @Database(
     entities = [SecurityEventEntity::class, IntruderLogEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class SecurityDatabase : RoomDatabase() {
@@ -115,8 +118,17 @@ abstract class SecurityDatabase : RoomDatabase() {
                     // WAL lets the service and UI read without serializing all
                     // readers behind a single rollback journal.
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+                    .addMigrations(MIGRATION_1_2)
                     .build().also { instance = it }
             }
+
+        private val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE security_events ADD COLUMN photoState TEXT NOT NULL DEFAULT 'NOT_REQUESTED'")
+                database.execSQL("ALTER TABLE security_events ADD COLUMN locationState TEXT NOT NULL DEFAULT 'NOT_REQUESTED'")
+                database.execSQL("ALTER TABLE security_events ADD COLUMN emailState TEXT NOT NULL DEFAULT 'NOT_REQUESTED'")
+            }
+        }
     }
 }
 
@@ -144,12 +156,19 @@ class SecurityStore(context: Context) {
 private fun SecurityEventEntity.toModel() = SecurityEvent(
     id, timestamp, failedAttempt, runCatching { SecurityEventStatus.valueOf(status) }
         .getOrDefault(SecurityEventStatus.FAILED), updatedAt, recoveryAttempts,
-    sendAttempts, photoPath, latitude, longitude, locationTimestamp
+    sendAttempts, photoPath, latitude, longitude, locationTimestamp,
+    runCatching { SecurityEventComponentState.valueOf(photoState) }
+        .getOrDefault(SecurityEventComponentState.NOT_REQUESTED),
+    runCatching { SecurityEventComponentState.valueOf(locationState) }
+        .getOrDefault(SecurityEventComponentState.NOT_REQUESTED),
+    runCatching { SecurityEventComponentState.valueOf(emailState) }
+        .getOrDefault(SecurityEventComponentState.NOT_REQUESTED)
 )
 
 private fun SecurityEvent.toEntity() = SecurityEventEntity(
     id, timestamp, failedAttempt, status.name, updatedAt, recoveryAttempts,
-    sendAttempts, photoPath, latitude, longitude, locationTimestamp
+    sendAttempts, photoPath, latitude, longitude, locationTimestamp,
+    photoState.name, locationState.name, emailState.name
 )
 
 private fun IntruderLogEntity.toModel() = IntruderLog(

@@ -3,6 +3,7 @@ package com.example
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.SecurityEventStatus
+import com.example.data.SecurityEventComponentState
 import com.example.data.IntruderLog
 import com.example.data.SecurityPrefs
 import org.junit.Assert.assertEquals
@@ -39,10 +40,14 @@ class SecurityEventRetryTest {
         )
 
         val saved = prefs.getSecurityEvent(event.id)
-        assertEquals(SecurityEventStatus.SEND_PENDING, saved?.status)
+        assertEquals(SecurityEventStatus.CAPTURED, saved?.status)
         assertEquals("/tmp/capture-${event.id}.jpg", saved?.photoPath)
         assertEquals(36.7, saved?.latitude)
         assertEquals(3.0, saved?.longitude)
+        assertEquals(SecurityEventComponentState.SUCCEEDED, saved?.photoState)
+        assertEquals(SecurityEventComponentState.SUCCEEDED, saved?.locationState)
+        assertTrue(prefs.moveCapturedEventToSendPending(event.id))
+        assertEquals(SecurityEventStatus.SEND_PENDING, prefs.getSecurityEvent(event.id)?.status)
     }
 
     @Test
@@ -50,6 +55,7 @@ class SecurityEventRetryTest {
         val event = prefs.enqueueSecurityEvent()
         assertTrue(prefs.claimSecurityEvent(event.id))
         prefs.recordCaptureResult(event.id, null, null, null, null)
+        prefs.moveCapturedEventToSendPending(event.id)
 
         repeat(2) {
             assertTrue(prefs.recordSendRetry(event.id))

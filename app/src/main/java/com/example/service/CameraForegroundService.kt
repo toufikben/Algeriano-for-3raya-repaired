@@ -35,6 +35,7 @@ import com.example.SecurityApp
 import com.example.data.IntruderLog
 import com.example.data.SecurityPrefs
 import com.example.data.SecurityEventStatus
+import com.example.data.SecurityEventComponentState
 import com.example.receiver.CountdownScheduler
 import com.example.util.EmailSender
 import com.example.worker.CaptureRetryWorker
@@ -126,6 +127,7 @@ class CameraForegroundService : Service() {
                     // Leave event PENDING and hand it to the durable queue.
                     val pendingId = intent?.getStringExtra(EXTRA_SECURITY_EVENT_ID)
                     if (!pendingId.isNullOrBlank()) {
+                        prefs.deferSecurityEvent(pendingId)
                         com.example.worker.SecurityEventDistributor.enqueue(applicationContext, pendingId)
                     }
                 }
@@ -242,6 +244,7 @@ class CameraForegroundService : Service() {
         }
         val existingEvent = eventId?.let { prefs.getSecurityEvent(it) }
         val sendOnly = !isTest && existingEvent?.status in setOf(
+            SecurityEventStatus.CAPTURED,
             SecurityEventStatus.SEND_PENDING,
             SecurityEventStatus.FAILED_RETRYABLE
         ) && !existingEvent?.photoPath.isNullOrBlank()
@@ -337,6 +340,9 @@ class CameraForegroundService : Service() {
                         locationTimestamp = location?.time
                     )
                 }
+                if (!isTest && eventId != null) {
+                    prefs.moveCapturedEventToSendPending(eventId)
+                }
 
                 // 3. Send Email if credentials available
                 val userEmail = prefs.email
@@ -356,6 +362,7 @@ class CameraForegroundService : Service() {
                 var statusMsg = listOf(photoStatus, locationStatus).joinToString(getString(com.example.R.string.ui_separator))
 
                 if (userEmail.isNotBlank() && userPassword.isNotBlank()) {
+                    if (!isTest && eventId != null) prefs.updateEmailState(eventId, SecurityEventComponentState.PENDING)
                     val subject = if (isTest) {
                         getString(com.example.R.string.ui_test_subject, timeStr)
                     } else {
@@ -390,6 +397,12 @@ class CameraForegroundService : Service() {
 
                     emailSuccess = sendResult.isSuccess
                     emailRetryable = sendResult.retryable
+                    if (!isTest && eventId != null) {
+                        prefs.updateEmailState(
+                            eventId,
+                            if (emailSuccess) SecurityEventComponentState.SUCCEEDED else SecurityEventComponentState.FAILED
+                        )
+                    }
                     val emailStatus = if (emailSuccess) {
                         getString(com.example.R.string.ui_fd5b9e2ff279)
                     } else {
@@ -397,6 +410,7 @@ class CameraForegroundService : Service() {
                     }
                     statusMsg = "$statusMsg${getString(com.example.R.string.ui_separator)}$emailStatus"
                 } else {
+                    if (!isTest && eventId != null) prefs.updateEmailState(eventId, SecurityEventComponentState.FAILED)
                     statusMsg = "$statusMsg${getString(com.example.R.string.ui_separator)}${getString(com.example.R.string.ui_email_unconfigured)}"
                 }
 

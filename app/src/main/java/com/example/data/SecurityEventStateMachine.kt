@@ -3,19 +3,26 @@ package com.example.data
 /**
  * Explicit state-transition policy for a security event.
  * Terminal states cannot be changed, which prevents retries from resurrecting
- * already completed or permanently failed events.
+ * already completed or permanently failed events. DEFERRED means that Android
+ * did not permit a camera foreground-service start at that moment.
  */
 object SecurityEventStateMachine {
     fun canTransition(from: SecurityEventStatus, to: SecurityEventStatus): Boolean {
         if (from == to) return true
         return when (from) {
             SecurityEventStatus.PENDING -> to in setOf(
+                SecurityEventStatus.DEFERRED,
                 SecurityEventStatus.IN_PROGRESS,
                 SecurityEventStatus.FAILED,
                 SecurityEventStatus.CANCELLED
             )
-            SecurityEventStatus.IN_PROGRESS -> to in setOf(
+            SecurityEventStatus.DEFERRED -> to in setOf(
                 SecurityEventStatus.PENDING,
+                SecurityEventStatus.IN_PROGRESS,
+                SecurityEventStatus.FAILED_FINAL,
+                SecurityEventStatus.CANCELLED
+            )
+            SecurityEventStatus.IN_PROGRESS -> to in setOf(
                 SecurityEventStatus.CAPTURED,
                 SecurityEventStatus.SEND_PENDING,
                 SecurityEventStatus.FAILED_RETRYABLE,
@@ -41,4 +48,20 @@ object SecurityEventStateMachine {
             SecurityEventStatus.CANCELLED -> false
         }
     }
+
+    fun isTerminal(status: SecurityEventStatus): Boolean = status in setOf(
+        SecurityEventStatus.SENT,
+        SecurityEventStatus.FAILED,
+        SecurityEventStatus.FAILED_FINAL,
+        SecurityEventStatus.CANCELLED
+    )
+
+    fun isPendingWork(status: SecurityEventStatus): Boolean = status in setOf(
+        SecurityEventStatus.PENDING,
+        SecurityEventStatus.DEFERRED,
+        SecurityEventStatus.IN_PROGRESS,
+        SecurityEventStatus.CAPTURED,
+        SecurityEventStatus.SEND_PENDING,
+        SecurityEventStatus.FAILED_RETRYABLE
+    )
 }

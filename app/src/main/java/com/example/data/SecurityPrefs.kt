@@ -38,8 +38,12 @@ data class IntruderLog(
 )
 
 enum class SecurityEventStatus {
-    PENDING, IN_PROGRESS, CAPTURED, SEND_PENDING, SENT,
+    PENDING, DEFERRED, IN_PROGRESS, CAPTURED, SEND_PENDING, SENT,
     FAILED, FAILED_RETRYABLE, FAILED_FINAL, CANCELLED
+}
+
+enum class SecurityEventComponentState {
+    NOT_REQUESTED, PENDING, SUCCEEDED, FAILED, DEFERRED
 }
 
 private fun SecurityEventStatus.isTerminal(): Boolean = this in setOf(
@@ -60,7 +64,10 @@ data class SecurityEvent(
     val photoPath: String? = null,
     val latitude: Double? = null,
     val longitude: Double? = null,
-    val locationTimestamp: Long? = null
+    val locationTimestamp: Long? = null,
+    val photoState: SecurityEventComponentState = SecurityEventComponentState.NOT_REQUESTED,
+    val locationState: SecurityEventComponentState = SecurityEventComponentState.NOT_REQUESTED,
+    val emailState: SecurityEventComponentState = SecurityEventComponentState.NOT_REQUESTED
 )
 
 data class CountdownDiagnosticEvent(
@@ -277,6 +284,7 @@ class SecurityPrefs private constructor(private val context: Context) {
         updateSecurityEventsInRoom { events ->
             events.map { event ->
                 if (event.status == SecurityEventStatus.PENDING ||
+                    event.status == SecurityEventStatus.DEFERRED ||
                     event.status == SecurityEventStatus.IN_PROGRESS ||
                     event.status == SecurityEventStatus.SEND_PENDING ||
                     event.status == SecurityEventStatus.FAILED_RETRYABLE
@@ -301,7 +309,9 @@ class SecurityPrefs private constructor(private val context: Context) {
     @Synchronized
     fun claimNextSecurityEvent(): SecurityEvent? {
         val now = System.currentTimeMillis()
-        val next = getSecurityEventsFromRoom().firstOrNull { it.status == SecurityEventStatus.PENDING } ?: return null
+        val next = getSecurityEventsFromRoom().firstOrNull {
+            it.status == SecurityEventStatus.PENDING || it.status == SecurityEventStatus.DEFERRED
+        } ?: return null
         updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == next.id) it.copy(
@@ -316,7 +326,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     @Synchronized
     fun claimSecurityEvent(id: String): Boolean {
         val event = getSecurityEventsFromRoom().firstOrNull { it.id == id } ?: return false
-        if (event.status != SecurityEventStatus.PENDING) return false
+        if (event.status != SecurityEventStatus.PENDING && event.status != SecurityEventStatus.DEFERRED) return false
         updateSecurityEventsInRoom { events ->
             events.map {
                 if (it.id == id) it.copy(
@@ -342,6 +352,20 @@ class SecurityPrefs private constructor(private val context: Context) {
     }
 
     @Synchronized
+    fun deferSecurityEvent(id: String): Boolean {
+        var changed = false
+        updateSecurityEventsInRoom { events ->
+            events.map { event ->
+                if (event.id == id && SecurityEventStateMachine.canTransition(event.status, SecurityEventStatus.DEFERRED)) {
+                    changed = true
+                    event.copy(status = SecurityEventStatus.DEFERRED, updatedAt = System.currentTimeMillis())
+                } else event
+            }
+        }
+        return changed
+    }
+
+    @Synchronized
     fun getSecurityEvent(id: String): SecurityEvent? = getSecurityEventsFromRoom().firstOrNull { it.id == id }
 
     @Synchronized
@@ -356,18 +380,41 @@ class SecurityPrefs private constructor(private val context: Context) {
             events.map {
                 if (it.id == id && SecurityEventStateMachine.canTransition(
                         it.status,
-                        SecurityEventStatus.SEND_PENDING
+                        SecurityEventStatus.CAPTURED
                     )) {
                     it.copy(
-                        status = SecurityEventStatus.SEND_PENDING,
+                        status = SecurityEventStatus.CAPTURED,
                         updatedAt = System.currentTimeMillis(),
                         photoPath = photoPath,
                         latitude = latitude,
                         longitude = longitude,
-                        locationTimestamp = locationTimestamp
+                        locationTimestamp = locationTimestamp,
+                        photoState = if (photoPath.isNullOrBlank()) SecurityEventComponentState.FAILED else SecurityEventComponentState.SUCCEEDED,
+                        locationState = if (latitude != null && longitude != null) SecurityEventComponentState.SUCCEEDED else SecurityEventComponentState.FAILED
                     )
                 } else it
             }
+        }
+    }
+
+    @Synchronized
+    fun moveCapturedEventToSendPending(id: String): Boolean {
+        var changed = false
+        updateSecurityEventsInRoom { events ->
+            events.map { event ->
+                if (event.id == id && SecurityEventStateMachine.canTransition(event.status, SecurityEventStatus.SEND_PENDING)) {
+                    changed = true
+                    event.copy(status = SecurityEventStatus.SEND_PENDING, updatedAt = System.currentTimeMillis())
+                } else event
+            }
+        }
+        return changed
+    }
+
+    @Synchronized
+    fun updateEmailState(id: String, state: SecurityEventComponentState) {
+        updateSecurityEventsInRoom { events ->
+            events.map { event -> if (event.id == id) event.copy(emailState = state, updatedAt = System.currentTimeMillis()) else event }
         }
     }
 
@@ -437,6 +484,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     fun hasPendingSecurityEvents(): Boolean = synchronized(this) {
         getSecurityEventsFromRoom().any {
             it.status == SecurityEventStatus.PENDING ||
+                it.status == SecurityEventStatus.DEFERRED ||
                 it.status == SecurityEventStatus.IN_PROGRESS ||
                 it.status == SecurityEventStatus.SEND_PENDING ||
                 it.status == SecurityEventStatus.FAILED_RETRYABLE
@@ -446,6 +494,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     fun getPendingSecurityEvents(): List<SecurityEvent> = synchronized(this) {
         getSecurityEventsFromRoom().filter {
             it.status == SecurityEventStatus.PENDING ||
+                it.status == SecurityEventStatus.DEFERRED ||
                 it.status == SecurityEventStatus.SEND_PENDING ||
                 it.status == SecurityEventStatus.FAILED_RETRYABLE
         }
@@ -455,6 +504,7 @@ class SecurityPrefs private constructor(private val context: Context) {
     fun getPendingSecurityEvent(id: String): SecurityEvent? {
         return store.event(id)?.takeIf {
             it.status == SecurityEventStatus.PENDING ||
+                it.status == SecurityEventStatus.DEFERRED ||
                 it.status == SecurityEventStatus.SEND_PENDING ||
                 it.status == SecurityEventStatus.FAILED_RETRYABLE
         }
@@ -467,6 +517,7 @@ class SecurityPrefs private constructor(private val context: Context) {
         updateSecurityEventsInRoom { events ->
             events.map { event ->
                 val stale = (event.status == SecurityEventStatus.IN_PROGRESS ||
+                    event.status == SecurityEventStatus.CAPTURED ||
                     event.status == SecurityEventStatus.SEND_PENDING) &&
                     now - event.updatedAt >= EVENT_LEASE_TIMEOUT_MILLIS
                 if (!stale) return@map event
@@ -769,20 +820,38 @@ class SecurityPrefs private constructor(private val context: Context) {
 
     fun getLogs(): List<IntruderLog> = store.logs()
 
+    @Synchronized
+    fun clearPhotoReference(file: File) {
+        val canonical = runCatching { file.canonicalPath }.getOrNull() ?: return
+        updateSecurityEventsInRoom { events ->
+            events.map { event ->
+                val eventCanonical = event.photoPath?.let { runCatching { File(it).canonicalPath }.getOrNull() }
+                if (eventCanonical == canonical) event.copy(
+                    photoPath = null,
+                    photoState = SecurityEventComponentState.FAILED,
+                    updatedAt = System.currentTimeMillis()
+                ) else event
+            }
+        }
+    }
+
     fun clearLogs() {
-        // Optionally delete image files
-        val logs = getLogs()
-        for (log in logs) {
-            log.photoPath?.let { path ->
+        val photoPaths = buildSet {
+            getLogs().mapNotNullTo(this) { it.photoPath }
+            getSecurityEvents().mapNotNullTo(this) { it.photoPath }
+        }
+        for (path in photoPaths) {
                 try {
                     val file = File(path)
                     if (file.exists()) file.delete()
                 } catch (e: Exception) {
                     // Ignore
                 }
-            }
         }
         saveLogs(emptyList())
+        updateSecurityEventsInRoom { events ->
+            events.map { it.copy(photoPath = null, photoState = SecurityEventComponentState.NOT_REQUESTED, updatedAt = System.currentTimeMillis()) }
+        }
         totalAttempts = 0
         _logsFlow.value = emptyList()
     }

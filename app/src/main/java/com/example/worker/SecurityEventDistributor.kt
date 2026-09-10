@@ -123,8 +123,9 @@ class SecurityEventWorker(
         // session will enqueue it again instead of converting this policy block
         // into a failed security event or an endless retry loop.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            // FIX: ensure recovery is scheduled so the pending event is not
-            // forgotten when the worker no-ops on API 34+.
+            prefs.deferSecurityEvent(event.id)
+            // The event stays durable and is retried from a visible context;
+            // WorkManager itself cannot prove that a camera FGS may start.
             SecurityEventDistributor.scheduleRecovery(applicationContext)
             return Result.success()
         }
