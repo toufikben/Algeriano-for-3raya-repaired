@@ -97,6 +97,7 @@
     <string name="ui_fcaa74c95b28">حفظ وفتح التطبيق</string>
     <string name="ui_4eeff8b9245e">فتح التطبيق</string>
     <string name="ui_4debd9959fb5">الحماية إلزامية</string>
+    <string name="ui_countdown_one_minute">دقيقة</string>
     <string name="ui_40add5d3e4a1">ساعة</string>
     <string name="ui_2dbaa8dc4ba5">ساعتان</string>
     <string name="ui_3be76f716469">6 ساعات</string>
