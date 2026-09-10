@@ -99,7 +99,7 @@ interface SecurityDao {
 
 @Database(
     entities = [SecurityEventEntity::class, IntruderLogEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class SecurityDatabase : RoomDatabase() {
@@ -118,7 +118,7 @@ abstract class SecurityDatabase : RoomDatabase() {
                     // WAL lets the service and UI read without serializing all
                     // readers behind a single rollback journal.
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build().also { instance = it }
             }
 
@@ -127,7 +127,53 @@ abstract class SecurityDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE security_events ADD COLUMN photoState TEXT NOT NULL DEFAULT 'NOT_REQUESTED'")
                 database.execSQL("ALTER TABLE security_events ADD COLUMN locationState TEXT NOT NULL DEFAULT 'NOT_REQUESTED'")
                 database.execSQL("ALTER TABLE security_events ADD COLUMN emailState TEXT NOT NULL DEFAULT 'NOT_REQUESTED'")
+                backfillComponentStates(database)
             }
+        }
+
+        private val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                backfillComponentStates(database)
+            }
+        }
+
+        /**
+         * Preserve facts already represented by the v1/v2 columns. A default
+         * value alone would incorrectly turn old successful captures into
+         * NOT_REQUESTED after upgrade.
+         */
+        private fun backfillComponentStates(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+            database.execSQL(
+                """
+                UPDATE security_events
+                SET photoState = CASE
+                    WHEN photoPath IS NOT NULL AND TRIM(photoPath) <> '' THEN 'SUCCEEDED'
+                    ELSE 'NOT_REQUESTED'
+                END
+                WHERE photoState = 'NOT_REQUESTED'
+                """.trimIndent()
+            )
+            database.execSQL(
+                """
+                UPDATE security_events
+                SET locationState = CASE
+                    WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN 'SUCCEEDED'
+                    ELSE 'NOT_REQUESTED'
+                END
+                WHERE locationState = 'NOT_REQUESTED'
+                """.trimIndent()
+            )
+            database.execSQL(
+                """
+                UPDATE security_events
+                SET emailState = CASE
+                    WHEN status = 'SENT' THEN 'SUCCEEDED'
+                    WHEN status = 'SEND_PENDING' OR status = 'FAILED_RETRYABLE' THEN 'PENDING'
+                    ELSE 'NOT_REQUESTED'
+                END
+                WHERE emailState = 'NOT_REQUESTED'
+                """.trimIndent()
+            )
         }
     }
 }
