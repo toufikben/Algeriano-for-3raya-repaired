@@ -3,6 +3,8 @@ package com.example.worker
 import android.content.Context
 import android.content.Intent
 import android.app.PendingIntent
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -128,6 +130,11 @@ object SecurityEventDistributor {
     internal const val MAX_ATTEMPTS = MAX_WORK_ATTEMPTS
 
     fun notifyDeferredCapture(context: Context, eventId: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
+        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
+
         val openIntent = PendingIntent.getActivity(
             context,
             eventId.hashCode(),
