@@ -267,4 +267,5 @@
     <string name="ui_state_succeeded">Succeeded</string>
     <string name="ui_state_failed">Failed</string>
     <string name="ui_state_deferred">Deferred</string>
+    <string name="ui_privacy_policy">Privacy policy</string>
 </resources>

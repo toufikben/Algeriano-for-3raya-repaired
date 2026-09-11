@@ -267,4 +267,5 @@
     <string name="ui_state_succeeded">نجح</string>
     <string name="ui_state_failed">فشل</string>
     <string name="ui_state_deferred">مؤجل</string>
+    <string name="ui_privacy_policy">سياسة الخصوصية</string>
 </resources>

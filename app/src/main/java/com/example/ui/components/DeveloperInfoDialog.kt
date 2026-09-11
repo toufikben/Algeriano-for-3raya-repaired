@@ -61,7 +61,8 @@ fun DeveloperInfoDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val devEmail = "www.toufik155@gmail.com"
+    val devEmail = "www.toufik.bendjeddah@gmail.com"
+    val privacyPolicyUrl = "https://raw.githubusercontent.com/toufikben/Algeriano-for-3raya-repaired/main/privacy-policy.html"
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -306,6 +307,31 @@ fun DeveloperInfoDialog(
                             fontSize = 13.sp
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        val privacyIntent = Intent(Intent.ACTION_VIEW, Uri.parse(privacyPolicyUrl))
+                        try {
+                            context.startActivity(privacyIntent)
+                        } catch (e: Exception) {
+                            // Ignore if no browser is available.
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CyanAccent,
+                        contentColor = Color.Black
+                    )
+                ) {
+                    Text(
+                        text = context.getString(com.example.R.string.ui_privacy_policy),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
