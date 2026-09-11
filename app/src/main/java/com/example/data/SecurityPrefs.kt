@@ -745,33 +745,10 @@ class SecurityPrefs private constructor(private val context: Context) {
         detail: String,
         timestamp: Long = System.currentTimeMillis()
     ) {
-        // FIX(diagnostics): getCountdownDiagnostics() returns newest-first.
-        // The old code appended to that reversed list and stored it, which
-        // scrambled chronological order more with every write and evicted the
-        // wrong events (this is why screenshots show receiver/service events
-        // but the expired/capture events between them vanish). Re-reverse to
-        // chronological before appending. commit() (not apply()) so an alarm
-        // firing right before the process dies still leaves its trace.
-        val current = getCountdownDiagnostics().reversed().toMutableList()
-        current.add(
-            CountdownDiagnosticEvent(
-                timestamp = timestamp,
-                stage = stage.take(48),
-                status = status.take(24),
-                detail = detail.take(240)
-            )
-        )
-        val array = JSONArray()
-        current.takeLast(MAX_COUNTDOWN_DIAGNOSTICS).forEach { event ->
-            array.put(
-                JSONObject()
-                    .put("timestamp", event.timestamp)
-                    .put("stage", event.stage)
-                    .put("status", event.status)
-                    .put("detail", event.detail)
-            )
-        }
-        prefs.edit().putString(KEY_COUNTDOWN_DIAGNOSTICS_JSON, array.toString()).commit()
+        // Diagnostic tracing was useful during device testing, but is not
+        // part of the production store build. Keep this compatibility method
+        // because background components call it, without persisting internal
+        // service, camera, PIN, or SMTP execution details.
     }
 
     fun getCountdownDiagnostics(): List<CountdownDiagnosticEvent> {
